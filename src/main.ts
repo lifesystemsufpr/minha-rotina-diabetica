@@ -1,29 +1,44 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
+  // prefixo global
+  app.setGlobalPrefix('api');
+
+  // CORS para desenvolvimento mobile
+  app.enableCors();
+
+  // ValidationPipe
   app.useGlobalPipes(
     new ValidationPipe({
-      // remove do payload qualquer propriedade que não esteja no DTO
       whitelist: true,
-      // se vier propriedade extra não prevista no DTO, rejeita com 400
-      // (em vez de silenciosamente ignorar)
       forbidNonWhitelisted: true,
-      // converte tipos primitivos (string -> number, string -> Date, etc)
-      // de acordo com o tipo declarado no DTO
       transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
+      stopAtFirstError: false,
     }),
   );
-  
-  await app.listen(process.env.PORT ?? 3000);
+
+  // filter global único
+  app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Swagger
+  const config = new DocumentBuilder()
+    .setTitle('Rotina Diabética API')
+    .setDescription('Documentação da API')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
+
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
 }
-bootstrap().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+
+bootstrap();

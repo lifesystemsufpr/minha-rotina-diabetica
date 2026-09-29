@@ -14,6 +14,7 @@ Backend do projeto Minha Rotina Diabética, construído com NestJS.
 2. Instale as dependências:
    ```bash
    npm install
+   npm install @nestjs/swagger@11
    ```
 3. Copie o arquivo de exemplo de variáveis de ambiente e preencha com seus dados locais:
    ```bash
