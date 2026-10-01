@@ -71,9 +71,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const body: ErrorResponseDto = {
       statusCode,
       error,
-      message,
+      message: this.stripQueryString(message, request),
       timestamp: new Date().toISOString(),
-      path: request.url,
+      path: this.getSafePath(request),
       method: request.method,
       ...(details ? { details } : {}),
     };
@@ -132,7 +132,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       };
     }
 
-    // Caso 2: qualquer outro erro não previsto 
+    // Caso 2: qualquer outro erro não previsto
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       error: 'Internal Server Error',
@@ -140,8 +140,21 @@ export class AllExceptionsFilter implements ExceptionFilter {
     };
   }
 
+  //Devolve só o caminho da requisição (tudo antes do `?`), sem query string.
+  
+  private getSafePath(request: Request): string {
+    return request.originalUrl.split('?')[0];
+  }
+
+  //Remove a query string de mensagens que repetem a URL da requisição.
+  private stripQueryString(message: string, request: Request): string {
+    const safePath = this.getSafePath(request);
+    if (safePath === request.originalUrl) return message;
+    return message.split(request.originalUrl).join(safePath);
+  }
+
   private logUnexpectedError(exception: unknown, request: Request): void {
-    const context = `${request.method} ${request.url}`;
+    const context = `${request.method} ${this.getSafePath(request)}`;
     if (exception instanceof Error) {
       this.logger.error(`[${context}] ${exception.message}`, exception.stack);
     } else {
