@@ -1,11 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { setupSwagger } from './config/swagger.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   app.useGlobalPipes(
     new ValidationPipe({
       // remove do payload qualquer propriedade que não esteja no DTO
@@ -22,17 +22,10 @@ async function bootstrap() {
     }),
   );
 
-  const config = new DocumentBuilder()
-    .setTitle('Minha Rotina Diabética - API')
-    .setDescription('Documentação oficial da API')
-    .setVersion('1.0')
-    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'JWT-auth')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
-
+  // CORS para o desenvolvimento do mobile (manual da Sprint 1, §12)
   app.enableCors();
+
+  setupSwagger(app);
 
   await app.listen(process.env.PORT ?? 3000);
 }
