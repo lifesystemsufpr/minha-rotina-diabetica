@@ -7,22 +7,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { ErrorResponseDto, FieldErrorDto } from '../dto/error-response.dto';
 
-// tipos definidos localmente — não dependem de nenhum módulo externo
-interface FieldValidationErrorDto {
-  field?: string;
-  message: string;
-}
-
-interface ErrorResponseDto {
-  statusCode: number;
-  error: string;
-  message: string;
-  timestamp: string;
-  path: string;
-  method: string;
-  details?: FieldValidationErrorDto[];
-}
 /**
  * Filtro global de exceptions.
  *
@@ -33,7 +19,7 @@ interface ErrorResponseDto {
  * Isso garante o critério de aceite:
  *   "Todos os endpoints conseguem retornar erros no mesmo formato."
  *
- * Registrado globalmente em `main.ts` via `app.useGlobalFilters(...)`.
+ * Registrado globalmente em `app.setup.ts` (configureApp).
  */
 
 @Catch()
@@ -64,7 +50,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     // Nunca vazar stack trace, mensagens de erro de SQL/driver ou qualquer
     // detalhe interno para o cliente. Isso é logado no servidor, mas a
     // resposta ao cliente é sempre uma mensagem genérica e segura.
-    if (statusCode === HttpStatus.INTERNAL_SERVER_ERROR) {
+    if (statusCode >= 500) {
       this.logUnexpectedError(exception, request);
     }
 
@@ -85,7 +71,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     statusCode: number;
     error: string;
     message: string;
-    details?: FieldValidationErrorDto[];
+    details?: FieldErrorDto[];
   } {
     // Caso 1: qualquer HttpException do Nest (as nativas: BadRequestException,
     // UnauthorizedException, ForbiddenException, NotFoundException,
@@ -108,10 +94,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
       if (typeof response === 'object' && response !== null) {
         const body = response as Record<string, unknown>;
 
-        const rawMessage = body.message ?? exception.message;
+        const rawMessage = body.message;
         const message = Array.isArray(rawMessage)
-          ? (rawMessage as string[]).join(', ')
-          : String(rawMessage);
+          ? rawMessage.map(String).join(', ')
+          : typeof rawMessage === 'string'
+            ? rawMessage
+            : exception.message;
 
         const error =
           (body.error as string | undefined) ??
@@ -119,7 +107,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           'Error';
 
         const details = Array.isArray(body.details)
-          ? (body.details as FieldValidationErrorDto[])
+          ? (body.details as FieldErrorDto[])
           : undefined;
 
         return { statusCode, error, message, details };
@@ -140,13 +128,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     };
   }
 
-  //Devolve só o caminho da requisição (tudo antes do `?`), sem query string.
-  
+  // Devolve só o caminho da requisição (tudo antes do `?`), sem query string.
   private getSafePath(request: Request): string {
     return request.originalUrl.split('?')[0];
   }
 
-  //Remove a query string de mensagens que repetem a URL da requisição.
+  // Remove a query string de mensagens que repetem a URL da requisição.
   private stripQueryString(message: string, request: Request): string {
     const safePath = this.getSafePath(request);
     if (safePath === request.originalUrl) return message;
@@ -158,7 +145,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof Error) {
       this.logger.error(`[${context}] ${exception.message}`, exception.stack);
     } else {
-      this.logger.error(`[${context}] Exceção não tratada: ${String(exception)}`);
+      this.logger.error(
+        `[${context}] Exceção não tratada: ${String(exception)}`,
+      );
     }
   }
 }

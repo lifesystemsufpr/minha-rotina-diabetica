@@ -5,13 +5,17 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
+import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
   @Post()
   @ApiCreatedResponse({ description: 'Payload válido' })
-  @ApiBadRequestResponse({ description: 'Payload inválido' })
+  @ApiBadRequestResponse({
+    description: 'Payload inválido; `details` lista os erros por campo',
+    type: ErrorResponseDto,
+  })
   create(@Body() dto: CreateUserDto) {
     // Se chegou até aqui, dto já passou pelo ValidationPipe global:
     // - todos os campos obrigatórios estão presentes e no formato certo

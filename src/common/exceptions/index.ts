@@ -1,2 +1,1 @@
-export * from './api-error.exception';
-export * from './common.exceptions';
+export * from './domain-exceptions';
