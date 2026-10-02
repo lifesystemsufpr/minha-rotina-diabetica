@@ -4,12 +4,19 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './modules/users/users.module';
 import { DatabaseModule } from './database/database.module';
-import { GlycemiaModule} from './modules/glycemia/glycemia.module';
+import { GlycemiaModule } from './modules/glycemia/glycemia.module';
 import { InsulinModule } from './modules/insulin/insulin.module';
-import { RemindersModule } from './modules/reminders/remiders.module';
+import { RemindersModule } from './modules/reminders/reminders.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true, }), UsersModule, DatabaseModule, GlycemiaModule, InsulinModule, RemindersModule,],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    DatabaseModule,
+    UsersModule,
+    GlycemiaModule,
+    InsulinModule,
+    RemindersModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
