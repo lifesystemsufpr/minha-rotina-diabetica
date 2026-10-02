@@ -1,10 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { setupSwagger } from './config/swagger.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   app.useGlobalPipes(
     new ValidationPipe({
       // remove do payload qualquer propriedade que não esteja no DTO
@@ -20,7 +21,12 @@ async function bootstrap() {
       },
     }),
   );
-  
+
+  // CORS para o desenvolvimento do mobile (manual da Sprint 1, §12)
+  app.enableCors();
+
+  setupSwagger(app);
+
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap().catch((err) => {

@@ -2,15 +2,21 @@ import { afterAll, beforeAll, describe, it } from '@jest/globals';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
+import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { DatabaseModule } from '../src/database/database.module';
+import { TestDatabaseModule } from './utils/test-database.module';
 
 describe('Users validation (e2e)', () => {
-  let app: INestApplication;
+  let app: INestApplication<App>;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideModule(DatabaseModule)
+      .useModule(TestDatabaseModule)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
@@ -41,8 +47,14 @@ describe('Users validation (e2e)', () => {
   });
 
   it('deve retornar 400 quando um campo obrigatório está ausente', () => {
-    const { email, ...rest } = validPayload;
-    return request(app.getHttpServer()).post('/users').send(rest).expect(400);
+    const payloadSemEmail = {
+      name: validPayload.name,
+      birthDate: validPayload.birthDate,
+    };
+    return request(app.getHttpServer())
+      .post('/users')
+      .send(payloadSemEmail)
+      .expect(400);
   });
 
   it('deve retornar 400 quando o e-mail é inválido', () => {
