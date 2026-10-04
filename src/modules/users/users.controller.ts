@@ -1,15 +1,20 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import {
-  ApiBadRequestResponse,
-  ApiCreatedResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Body, Controller, Delete, Post, Req, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
+import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+interface RequestWithUser extends Request {
+  user: { id: string };
+}
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
   @Post()
   @ApiCreatedResponse({ description: 'Payload válido' })
   @ApiBadRequestResponse({
@@ -17,12 +22,18 @@ export class UsersController {
     type: ErrorResponseDto,
   })
   create(@Body() dto: CreateUserDto) {
-    // Se chegou até aqui, dto já passou pelo ValidationPipe global:
-    // - todos os campos obrigatórios estão presentes e no formato certo
-    // - não há propriedades extras além das definidas no DTO
     return {
       message: 'Usuário validado com sucesso',
       data: dto,
     };
+  }
+
+  @Delete('me')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiNoContentResponse({ description: 'Conta excluída com sucesso' })
+  async deleteAccount(@Req() request: RequestWithUser): Promise<void> {
+    const usuarioId = request.user.id;
+    await this.usersService.deleteAccount(usuarioId);
   }
 }
