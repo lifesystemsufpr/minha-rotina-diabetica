@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Perfil } from '../users/entities/perfil.entity';
 import { CreateProfileDto } from './dto/create-profile.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ProfileResponseDto } from './dto/profile-response.dto';
 
 @Injectable()
@@ -40,6 +41,30 @@ export class ProfileService {
       throw new NotFoundException('Perfil não encontrado para este usuário.');
     }
 
+    return this.toResponseDto(perfil);
+  }
+
+  async update(
+    usuarioId: string,
+    updateProfileDto: UpdateProfileDto,
+  ): Promise<ProfileResponseDto> {
+    const perfil = await this.perfilRepository.findOne({
+      where: { user: { id: usuarioId } },
+      relations: ['user'],
+    });
+
+    if (!perfil) {
+      throw new NotFoundException('Perfil não encontrado para este usuário.');
+    }
+
+    Object.assign(perfil, updateProfileDto);
+
+    const perfilAtualizado = await this.perfilRepository.save(perfil);
+
+    return this.toResponseDto(perfilAtualizado);
+  }
+
+  private toResponseDto(perfil: Perfil): ProfileResponseDto {
     return {
       nome: perfil.user.nome,
       idade: this.calcularIdade(perfil.dataNascimento),
