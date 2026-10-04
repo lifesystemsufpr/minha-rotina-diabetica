@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -17,16 +17,11 @@ export class UsersService {
       throw new NotFoundException('Usuário não encontrado.');
     }
 
-    // TODO: decisão pendente do time (soft vs hard delete)
-    //
-    // OPÇÃO A — Soft delete (requer adicionar coluna `ativo` ou `deletedAt` na entidade User):
-    // user.ativo = false;
-    // await this.userRepository.save(user);
-    //
-    // OPÇÃO B — Hard delete:
-    // await this.userRepository.remove(user);
-    //
-    // Por enquanto, nenhuma das duas está ativa — aguardando resposta do time.
-    throw new Error('Estratégia de exclusão ainda não definida pelo time.');
+    if (!user.ativo) {
+      throw new ConflictException('Esta conta já está inativa.');
+    }
+
+    user.ativo = false;
+    await this.userRepository.save(user);
   }
 }
