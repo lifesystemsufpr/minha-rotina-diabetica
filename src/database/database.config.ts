@@ -16,6 +16,6 @@ export function buildDatabaseOptions(env: EnvReader): DataSourceOptions {
     synchronize: false,
     // Só erros e avisos: o log completo imprimiria os valores das queries
     // (e-mail, hash de senha) no console.
-    logging: ['error', 'warn'],
+    logging: ['warn'],
   };
 }
