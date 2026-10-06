@@ -1,6 +1,22 @@
-import { Body, Controller, Delete, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  HttpCode,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { Request } from 'express';
-import { ApiBadRequestResponse, ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiNoContentResponse, ApiNotFoundResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiNotFoundResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 import { UsersService } from './users.service';
@@ -29,9 +45,12 @@ export class UsersController {
   }
 
   @Delete('me')
+  @HttpCode(204)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiNoContentResponse({ description: 'Conta marcada como inativa (soft delete). Dados de glicemia, insulina, lembretes e perfil permanecem no banco, associados ao usuário inativo.',
+  @ApiNoContentResponse({
+    description:
+      'Conta marcada como inativa (soft delete). Dados de glicemia, insulina, lembretes e perfil permanecem no banco, associados ao usuário inativo.',
   })
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   @ApiConflictResponse({ description: 'Conta já está inativa' })
