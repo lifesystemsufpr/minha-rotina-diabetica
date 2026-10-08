@@ -58,12 +58,19 @@ export class UsersService {
   }
 
   // Uso interno, só para o login: único método que carrega senhaHash.
+  // Traz também `ativo`, para o login recusar conta excluída.
   // O resultado nunca deve ser devolvido ao cliente.
   async findByEmailWithPassword(email: string): Promise<User | null> {
     if (!email?.trim()) return null;
     return this.usersRepository.findOne({
       where: { email: normalizeEmail(email) },
-      select: { id: true, nome: true, email: true, senhaHash: true },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        senhaHash: true,
+        ativo: true,
+      },
     });
   }
 

@@ -5,11 +5,9 @@ import {
   Get,
   HttpCode,
   Post,
-  Req,
   UseGuards,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Request } from 'express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -27,10 +25,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateUserDto } from './dto/create-user.dto';
 import { toUserResponse, UserResponseDto } from './dto/user-response.dto';
 import { UsersService } from './users.service';
-
-interface RequestWithUser extends Request {
-  user: { id: string };
-}
 
 @ApiTags('users')
 @Controller('users')
@@ -78,8 +72,11 @@ export class UsersController {
   })
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   @ApiConflictResponse({ description: 'Conta já está inativa' })
-  async deleteAccount(@Req() request: RequestWithUser): Promise<void> {
-    const usuarioId = request.user.id;
+  @ApiUnauthorizedResponse({
+    description: 'Token ausente, inválido, expirado ou de conta excluída',
+    type: ErrorResponseDto,
+  })
+  async deleteAccount(@CurrentUser('id') usuarioId: string): Promise<void> {
     await this.users.deleteAccount(usuarioId);
   }
 }
