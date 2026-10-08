@@ -1,23 +1,27 @@
-import { Body, Controller, Get, Patch, Req, UseGuards } from '@nestjs/common';
-import { Request } from 'express';
+import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
-  ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { ProfileService } from './profile.service';
-import { ProfileResponseDto } from './dto/profile-response.dto';
+import { ErrorResponseDto } from '../../common/dto/error-response.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ProfileResponseDto } from './dto/profile-response.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-
-interface RequestWithUser extends Request {
-  user: { id: string };
-}
+import { ProfileService } from './profile.service';
 
 @ApiTags('profile')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiUnauthorizedResponse({
+  description: 'Token ausente, inválido, expirado ou de conta excluída',
+  type: ErrorResponseDto,
+})
 @Controller('profile')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
@@ -26,12 +30,14 @@ export class ProfileController {
   @ApiOperation({
     summary: 'Retorna os dados do perfil do usuário autenticado',
   })
-  @ApiResponse({ status: 200, type: ProfileResponseDto })
-  @ApiResponse({ status: 404, description: 'Perfil não encontrado' })
-  async getProfile(
-    @Req() request: RequestWithUser,
+  @ApiOkResponse({ type: ProfileResponseDto })
+  @ApiNotFoundResponse({
+    description: 'Perfil não encontrado',
+    type: ErrorResponseDto,
+  })
+  getProfile(
+    @CurrentUser('id') usuarioId: string,
   ): Promise<ProfileResponseDto> {
-    const usuarioId = request.user.id;
     return this.profileService.getProfileData(usuarioId);
   }
 
@@ -40,14 +46,19 @@ export class ProfileController {
     summary:
       'Atualiza dados pessoais e contato de emergência do usuário autenticado',
   })
-  @ApiResponse({ status: 200, type: ProfileResponseDto })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 404, description: 'Perfil não encontrado' })
-  async updateProfile(
-    @Req() request: RequestWithUser,
+  @ApiOkResponse({ type: ProfileResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Dados inválidos',
+    type: ErrorResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Perfil não encontrado',
+    type: ErrorResponseDto,
+  })
+  updateProfile(
+    @CurrentUser('id') usuarioId: string,
     @Body() updateProfileDto: UpdateProfileDto,
   ): Promise<ProfileResponseDto> {
-    const usuarioId = request.user.id;
     return this.profileService.update(usuarioId, updateProfileDto);
   }
 }

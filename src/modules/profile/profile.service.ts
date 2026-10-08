@@ -5,6 +5,12 @@ import { Perfil } from '../users/entities/perfil.entity';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ProfileResponseDto } from './dto/profile-response.dto';
+import { calcularIdade } from './utils/calcular-idade';
+
+// decimal vem do MySQL como texto; null continua null (Number(null) seria 0).
+function toNumberOrNull(value: number | string | null): number | null {
+  return value === null || value === undefined ? null : Number(value);
+}
 
 @Injectable()
 export class ProfileService {
@@ -67,27 +73,13 @@ export class ProfileService {
   private toResponseDto(perfil: Perfil): ProfileResponseDto {
     return {
       nome: perfil.user.nome,
-      idade: this.calcularIdade(perfil.dataNascimento),
-      alturaCm: Number(perfil.alturaCm),
-      pesoKg: Number(perfil.pesoKg),
-      tipoDiabetes: perfil.tipoDiabetes,
-      contatoEmergenciaNome: perfil.contatoEmergenciaNome,
-      contatoEmergenciaRelacao: perfil.contatoEmergenciaRelacao,
-      contatoEmergenciaTelefone: perfil.contatoEmergenciaTelefone,
+      idade: calcularIdade(perfil.dataNascimento),
+      alturaCm: toNumberOrNull(perfil.alturaCm),
+      pesoKg: toNumberOrNull(perfil.pesoKg),
+      tipoDiabetes: perfil.tipoDiabetes ?? null,
+      contatoEmergenciaNome: perfil.contatoEmergenciaNome ?? null,
+      contatoEmergenciaRelacao: perfil.contatoEmergenciaRelacao ?? null,
+      contatoEmergenciaTelefone: perfil.contatoEmergenciaTelefone ?? null,
     };
-  }
-
-  private calcularIdade(dataNascimento: string): number {
-    const nascimento = new Date(dataNascimento);
-    const hoje = new Date();
-    let idade = hoje.getFullYear() - nascimento.getFullYear();
-    const aindaNaoFezAniversarioEsteAno =
-      hoje.getMonth() < nascimento.getMonth() ||
-      (hoje.getMonth() === nascimento.getMonth() &&
-        hoje.getDate() < nascimento.getDate());
-    if (aindaNaoFezAniversarioEsteAno) {
-      idade--;
-    }
-    return idade;
   }
 }
