@@ -4,10 +4,6 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { createTestApp } from './utils/create-test-app';
 
-// Garante as variáveis mesmo que não exista um .env no ambiente de teste
-process.env.JWT_SECRET ??= 'segredo-somente-para-teste';
-process.env.JWT_EXPIRATION ??= '15m';
-
 interface LoginBody {
   accessToken: string;
 }
@@ -133,4 +129,27 @@ describe('Auth + rota protegida', () => {
       .expect(200);
     expect((res.body as UserBody).email).toBe(email);
   });
+
+  it('/users/me devolve só os campos públicos', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/users/me')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+    expect(Object.keys(res.body as object).sort()).toEqual([
+      'createdAt',
+      'email',
+      'id',
+      'nome',
+    ]);
+  });
+
+  it('register recusa senha sem letras e números (400)', () =>
+    request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({
+        nome: 'Fraca',
+        email: 'fraca@teste.local',
+        senha: 'somenteletras',
+      })
+      .expect(400));
 });
