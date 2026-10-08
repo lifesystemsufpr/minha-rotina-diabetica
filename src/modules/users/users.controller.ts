@@ -18,7 +18,9 @@ import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateUserDto } from './dto/create-user.dto';
+import { toUserResponse, UserResponseDto } from './dto/user-response.dto';
 import { UsersService } from './users.service';
+
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
@@ -40,14 +42,18 @@ export class UsersController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  @ApiOkResponse({ description: 'Dados do usuário autenticado' })
+  @ApiOkResponse({
+    description: 'Dados do usuário autenticado',
+    type: UserResponseDto,
+  })
   @ApiUnauthorizedResponse({
     description: 'Token ausente, inválido ou expirado',
     type: ErrorResponseDto,
   })
-  async me(@CurrentUser('id') userId: string) {
+  async me(@CurrentUser('id') userId: string): Promise<UserResponseDto> {
     const user = await this.users.findById(userId);
     if (!user) throw new UnauthorizedException();
-    return user;
+    // Nunca devolver a entidade: só os campos públicos do UserResponseDto.
+    return toUserResponse(user);
   }
 }
