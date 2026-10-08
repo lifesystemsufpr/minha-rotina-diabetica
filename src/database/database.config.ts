@@ -14,8 +14,9 @@ export function buildDatabaseOptions(env: EnvReader): DataSourceOptions {
     database: env('DATABASE_NAME') || 'rotina_diabetica',
     // O schema só muda por migration.
     synchronize: false,
-    // Só erros e avisos: o log completo imprimiria os valores das queries
-    // (e-mail, hash de senha) no console.
+    // Só avisos. O log de queries (inclusive o de queries com erro) imprime
+    // os parâmetros, como e-mail e hash de senha. Erros continuam chegando
+    // ao filtro global, que loga qualquer 5xx sem os parâmetros.
     logging: ['warn'],
   };
 }
