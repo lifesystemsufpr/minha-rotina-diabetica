@@ -2,10 +2,12 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   HttpCode,
   Post,
   Req,
   UseGuards,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import {
@@ -15,12 +17,16 @@ import {
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { CreateUserDto } from './dto/create-user.dto';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
-import { UsersService } from './users.service';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CreateUserDto } from './dto/create-user.dto';
+import { toUserResponse, UserResponseDto } from './dto/user-response.dto';
+import { UsersService } from './users.service';
 
 interface RequestWithUser extends Request {
   user: { id: string };
@@ -29,7 +35,7 @@ interface RequestWithUser extends Request {
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly users: UsersService) {}
 
   @Post()
   @ApiCreatedResponse({ description: 'Payload válido' })
@@ -44,6 +50,24 @@ export class UsersController {
     };
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  @ApiOkResponse({
+    description: 'Dados do usuário autenticado',
+    type: UserResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token ausente, inválido ou expirado',
+    type: ErrorResponseDto,
+  })
+  async me(@CurrentUser('id') userId: string): Promise<UserResponseDto> {
+    const user = await this.users.findById(userId);
+    if (!user) throw new UnauthorizedException();
+    // Nunca devolver a entidade: só os campos públicos do UserResponseDto.
+    return toUserResponse(user);
+  }
+
   @Delete('me')
   @HttpCode(204)
   @ApiBearerAuth()
@@ -56,6 +80,6 @@ export class UsersController {
   @ApiConflictResponse({ description: 'Conta já está inativa' })
   async deleteAccount(@Req() request: RequestWithUser): Promise<void> {
     const usuarioId = request.user.id;
-    await this.usersService.deleteAccount(usuarioId);
+    await this.users.deleteAccount(usuarioId);
   }
 }

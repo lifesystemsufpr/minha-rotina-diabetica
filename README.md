@@ -81,3 +81,39 @@ npm run test:e2e   # testes e2e (usam SQLite em memória, não precisam de MySQL
 - Nunca commite o arquivo `.env`
 - Cada integrante deve criar seu próprio `.env` local a partir do `.env.example`
 - Variável de ambiente nova deve ser adicionada ao `.env.example` no mesmo PR, sem valor secreto
+
+## Autenticação (JWT Bearer)
+
+Variáveis obrigatórias no `.env`: `JWT_SECRET` (string longa e aleatória) e `JWT_EXPIRATION` (ex.: `1d`, o valor do `.env.example`). A aplicação não sobe sem elas. O payload do token tem só `sub` (id do usuário), mais `iat` e `exp`.
+
+Fluxo: `POST /api/auth/register` → `POST /api/auth/login` (retorna `{ "accessToken": "..." }`) → enviar `Authorization: Bearer <accessToken>` nas rotas privadas.
+
+### Como proteger uma rota
+
+```typescript
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard) // no controller inteiro ou em um método
+@Controller('glicemias')
+export class GlicemiasController {
+  @Get()
+  list(@CurrentUser('id') userId: string) {
+    // userId vem do token; nunca leia o dono do recurso do body ou da query
+  }
+}
+```
+
+- Sem token, token inválido ou expirado: `401`.
+- `@CurrentUser()` devolve `{ id }`; `@CurrentUser('id')` devolve só o id.
+- O módulo do controller não precisa importar o `AuthModule`: o Guard usa a strategy `jwt`, já registrada globalmente pelo Passport.
+
+### Teste manual no Swagger (`/api/docs`)
+
+1. **Token válido:** `POST /auth/login`, copie o `accessToken`, clique em **Authorize**, cole o token e chame `GET /users/me` → `200`.
+2. **Sem token:** clique em Authorize → Logout e chame `GET /users/me` → `401`.
+3. **Token inválido:** autorize com o token alterado (mude os últimos caracteres) → `401`.
+4. **Token expirado:** defina `JWT_EXPIRATION=10s` no `.env`, reinicie, faça login, espere 10 segundos e chame `GET /users/me` → `401`. Depois volte para o valor anterior.
