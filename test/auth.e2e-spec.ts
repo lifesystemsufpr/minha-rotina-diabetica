@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { createTestApp } from './utils/create-test-app';
+import { validRegisterPayload } from './utils/valid-register-payload';
 
 // Garante as variáveis mesmo que não exista um .env no ambiente de teste
 process.env.JWT_SECRET ??= 'segredo-somente-para-teste';
@@ -33,7 +34,7 @@ describe('Auth + rota protegida', () => {
 
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ nome: 'Teste', email, senha })
+      .send(validRegisterPayload({ nome: 'Teste', email, senha }))
       .expect(201);
 
     const res = await request(app.getHttpServer())
@@ -87,11 +88,13 @@ describe('Auth + rota protegida', () => {
   it('register não retorna senha nem hash', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({
-        nome: 'Outro',
-        email: 'outro@teste.local',
-        senha: 'senha-forte-123',
-      })
+      .send(
+        validRegisterPayload({
+          nome: 'Outro',
+          email: 'outro@teste.local',
+          senha: 'senha-forte-123',
+        }),
+      )
       .expect(201);
     const body = res.body as UserBody;
     expect(body).not.toHaveProperty('senha');

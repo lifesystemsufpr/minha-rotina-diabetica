@@ -1,5 +1,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
@@ -8,7 +10,9 @@ import {
 } from '@nestjs/swagger';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 import { AuthService } from './auth.service';
+import { UserResponseDto } from '../users/dto/user-response.dto';
 import { LoginDto } from './dto/login.dto';
+import { LoginResponseDto } from './dto/login-response.dto';
 import { RegisterDto } from './dto/register.dto';
 
 @ApiTags('Auth')
@@ -17,21 +21,41 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Post('register')
-  @ApiOperation({ summary: 'Cadastra um novo usuário' })
-  @ApiCreatedResponse({ description: 'Usuário criado (sem senha/hash)' })
-  register(@Body() dto: RegisterDto) {
+  @ApiOperation({ summary: 'Cadastra um novo usuário e seu perfil inicial' })
+  @ApiCreatedResponse({
+    description: 'Usuário e perfil criados (nunca inclui senha/hash)',
+    type: UserResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Payload inválido ou com campos não permitidos; `details` lista os erros por campo',
+    type: ErrorResponseDto,
+  })
+  @ApiConflictResponse({
+    description: 'E-mail já cadastrado',
+    type: ErrorResponseDto,
+  })
+  register(@Body() dto: RegisterDto): Promise<UserResponseDto> {
     return this.auth.register(dto);
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Autentica e retorna o access token JWT' })
-  @ApiOkResponse({ description: 'Retorna { accessToken }' })
-  @ApiUnauthorizedResponse({
-    description: 'Credenciais inválidas',
+  @ApiOkResponse({
+    description: 'Credenciais válidas: token JWT e dados mínimos do usuário',
+    type: LoginResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Payload inválido; `details` lista os erros por campo',
     type: ErrorResponseDto,
   })
-  login(@Body() dto: LoginDto) {
+  @ApiUnauthorizedResponse({
+    description:
+      'E-mail ou senha inválidos (mensagem única, não revela se o e-mail existe)',
+    type: ErrorResponseDto,
+  })
+  login(@Body() dto: LoginDto): Promise<LoginResponseDto> {
     return this.auth.login(dto);
   }
 }
