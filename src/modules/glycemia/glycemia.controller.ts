@@ -1,9 +1,10 @@
-import { Body, Controller, Post, Req, UseGuards, Get, Query, Param} from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards, Get, Query, Param, Patch} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CreateGlycemiaDto } from './dto/create-glycemia.dto';
 import { GlycemiaService } from './glycemia.service';
 import { ListGlycemiaDto } from './dto/list-glycemia.dto';
+import { UpdateGlycemiaDto } from './dto/update-glycemia.dto'
 
 @ApiTags('glycemias')
 @ApiBearerAuth('JWT-auth')
@@ -50,4 +51,21 @@ export class GlycemiaController{
     return this.service.findOne(req.user.id, id);
     }
 
+//----------------------------------------------------------------------------------
+
+    @Patch(':id')
+    @ApiOperation({ summary: 'Editar glicemia por ID' })
+    @ApiResponse({ status: 200, description: 'Glicemia atualizada' })
+    @ApiResponse({ status: 400, description: 'Dados inválidos' })
+    @ApiResponse({ status: 401, description: 'Token inválido ou ausente' })
+    @ApiResponse({ status: 404, description: 'Glicemia não encontrada' })
+
+    update(
+    @Req() req: { user: { id: string } },
+    @Param('id') id: string,
+    @Body() dto: UpdateGlycemiaDto){
+    return this.service.update(req.user.id, id, dto);
+    }
+
+//--------------------------------------------------------------------------------------
 }

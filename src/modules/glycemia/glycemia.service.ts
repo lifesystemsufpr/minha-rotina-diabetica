@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { CreateGlycemiaDto } from './dto/create-glycemia.dto';
 import { GlycemiaStatus } from './enums/glycemia.enums';
 import { ListGlycemiaDto } from './dto/list-glycemia.dto';
+import { UpdateGlycemiaDto } from './dto/update-glycemia.dto';
 
 
 const LIMITE_BAIXA = 70;
@@ -98,7 +99,7 @@ async findAll(userId: string, filtros: ListGlycemiaDto){
 //----------------------------------------------------------------
     
 async findOne(userId: string, id: string){
-    
+
   const linhas = await this.dataSource.query(
     `SELECT id, valor, momento, status, data_hora AS dataHora, observacao FROM glicemias WHERE id = ? AND usuario_id = ? LIMIT 1`, [id, userId] );
 
@@ -107,6 +108,62 @@ async findOne(userId: string, id: string){
   }
 
   return linhas[0];
+}
+
+//-------------------------------------------------------------------
+
+
+async update(
+  userId: string,
+  id: string,
+  dto: UpdateGlycemiaDto,
+) {
+  if (Object.keys(dto).length === 0) {
+    throw new BadRequestException('Informe ao menos um campo para atualizar');
+  }
+
+  const linhas: { 
+    id: string;
+    valor: number;
+    momento: string;
+    status: string;
+    data: string;
+    hora: string;
+    observacao: string | null;
+  }[] = await this.dataSource.query(
+    `SELECT id, valor, momento, status, DATE_FORMAT(data_hora, '%d-%m-%Y') AS data, DATE_FORMAT(data_hora, '%H:%i') AS hora,  observacao FROM glicemias WHERE id = ? AND usuario_id = ? LIMIT 1`,[id, userId]);
+
+  if (linhas.length === 0){
+    throw new NotFoundException('Glicemia não encontrada');
+  }
+
+  const atual = linhas[0];
+  const valor = dto.valor ?? atual.valor;
+  const momento = dto.momento ?? atual.momento;
+  const data = dto.data ?? atual.data;
+  const hora = dto.hora ?? atual.hora;
+  const observacao = dto.observacao;
+
+  const [dia, mes, ano] = data.split('-');
+  const dataHora = `${ano}-${mes}-${dia} ${hora}:00`;
+
+  let status = atual.status;
+
+  if (dto.valor !== undefined){
+
+    if (valor < 70) {
+      status = 'baixa';
+    } else if (valor > 180) {
+      status = 'alta';
+    } else {
+      status = 'normal';
+    }
+  }
+
+  await this.dataSource.query(
+    `UPDATE glicemias SET valor = ?, momento = ?, data_hora = ?, status = ?, observacao = COALESCE(?, observacao), updated_at = CURRENT_TIMESTAMP(6) WHERE id = ? AND usuario_id = ?`,[valor, momento, dataHora,  status,  observacao === undefined ? null : observacao,  id,  userId]);
+
+  return this.findOne(userId, id);
 }
 
 

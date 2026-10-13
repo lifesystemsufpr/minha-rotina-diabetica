@@ -225,5 +225,75 @@ const datas = '?startDate=11-10-2026&endDate=11-10-2026';
     expect(res.status).toBe(404);
     });
 
+//-----------------------------------------------------------------
+
+
+describe('PATCH /glycemias/:id', () =>{
+
+  const idProprio = 'glicemia-patch-proprio';
+  const idOutro = 'glicemia-patch-outro';
+  const idInexistente = 'glicemia-patch-inexistente';
+
+  const editar = (id: string, usuario = USUARIO_ID) =>
+    request(app.getHttpServer())
+      .patch(`/glycemias/${id}`)
+      .set('Authorization', 'Bearer token')
+      .set('x-user', usuario);
+
+  beforeAll(async() =>{
+
+    await db.query( 'DELETE FROM glicemias WHERE id IN (?, ?)',[idProprio, idOutro]);
+
+    await db.query(`INSERT INTO glicemias(id, usuario_id, valor, momento, status, data_hora) VALUES (?, ?, 100, 'jejum', 'normal', '2026-10-12 08:00:00'),   (?, ?, 100, 'jejum', 'normal', '2026-10-12 09:00:00')`, [idProprio, USUARIO_ID, idOutro, 'usuario-2']);
+  });
+
+  afterAll(async() =>{
+    await db.query('DELETE FROM glicemias WHERE id IN (?, ?)',[idProprio, idOutro]);
+  });
+
+  it('edita glicemia própria', async() =>{
+    const res = await editar(idProprio)
+      .send({ valor: 150 })
+      .expect(200);
+
+    expect(Number(res.body.valor)).toBe(150);
+  });
+
+  it('atualiza o valor no banco', async() =>{
+    await editar(idProprio)
+      .send({ valor: 160 })
+      .expect(200);
+
+    const resultado = await db.query( 'SELECT valor FROM glicemias WHERE id = ?', [idProprio]);
+
+    expect(Number(resultado[0].valor)).toBe(160);
+  });
+
+  it.each([
+    {}])('rejeita dados inválidos ou vazios: %j', (dados: object) => editar(idProprio).send(dados).expect(400),);
+
+  it('não edita glicemia de outro usuário', async() =>{
+    await editar(idOutro)
+      .send({ valor: 99 })
+      .expect(404);
+
+    const resultado = await db.query( 'SELECT valor FROM glicemias WHERE id = ?',[idOutro]);
+
+    expect(Number(resultado[0].valor)).toBe(100);
+  });
+
+  it('retorna 404 para ID inexistente', async() =>{
+    await editar(idInexistente)
+      .send({ valor: 150 })
+      .expect(404);
+  });
+
+  it('exige token para editar', async ()=>{
+    await request(app.getHttpServer())
+      .patch(`/glycemias/${idProprio}`)
+      .send({ valor: 150 })
+      .expect(401);
+  });
+});
 
 });
