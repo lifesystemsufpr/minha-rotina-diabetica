@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards, Get, Query, Param, Patch} from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards, Get, Query, Param, Patch, Delete, HttpCode, HttpStatus} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CreateGlycemiaDto } from './dto/create-glycemia.dto';
@@ -68,4 +68,19 @@ export class GlycemiaController{
     }
 
 //--------------------------------------------------------------------------------------
+
+    @Delete(':id')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Excluir glicemia por ID' })
+    @ApiResponse({ status: 204, description: 'Glicemia excluída' })
+    @ApiResponse({ status: 401, description: 'Token inválido ou ausente' })
+    @ApiResponse({ status: 404, description: 'Glicemia não encontrada' })
+
+    remove(
+    @Req() req: { user: { id: string } },
+    @Param('id') id: string,){
+    return this.service.remove(req.user.id, id);
+    }
+
 }
+

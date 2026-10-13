@@ -160,11 +160,21 @@ async update(
     }
   }
 
-  await this.dataSource.query(
-    `UPDATE glicemias SET valor = ?, momento = ?, data_hora = ?, status = ?, observacao = COALESCE(?, observacao), updated_at = CURRENT_TIMESTAMP(6) WHERE id = ? AND usuario_id = ?`,[valor, momento, dataHora,  status,  observacao === undefined ? null : observacao,  id,  userId]);
+  await this.dataSource.query(`UPDATE glicemias SET valor = ?, momento = ?, data_hora = ?, status = ?, observacao = COALESCE(?, observacao), updated_at = CURRENT_TIMESTAMP(6) WHERE id = ? AND usuario_id = ?`,[valor, momento, dataHora,  status,  observacao === undefined ? null : observacao,  id,  userId]);
 
   return this.findOne(userId, id);
 }
 
+//--------------------------------------------------------------------------------------------------------------------------------
+
+async remove(userId: string, id: string){
+  const linhas = await this.dataSource.query('SELECT id FROM glicemias WHERE id = ? AND usuario_id = ?', [id, userId]);
+
+  if (linhas.length === 0) {
+    throw new NotFoundException('Glicemia não encontrada');
+  }
+
+  await this.dataSource.query('DELETE FROM glicemias WHERE id = ? AND usuario_id = ?',[id, userId]);
+}
 
 }

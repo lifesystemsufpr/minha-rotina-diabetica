@@ -251,7 +251,7 @@ describe('PATCH /glycemias/:id', () =>{
     await db.query('DELETE FROM glicemias WHERE id IN (?, ?)',[idProprio, idOutro]);
   });
 
-  it('edita glicemia própria', async() =>{
+  it('edita glicemia', async() =>{
     const res = await editar(idProprio)
       .send({ valor: 150 })
       .expect(200);
@@ -294,6 +294,54 @@ describe('PATCH /glycemias/:id', () =>{
       .send({ valor: 150 })
       .expect(401);
   });
+
+//-------------------------------------------------------------------------------------------------------------
+    
+        describe('DELETE /glycemias/:id', () =>{
+        const idProprio = 'glicemia-delete-proprio';
+        const idOutro = 'glicemia-delete-outro';
+        const idInexistente = 'glicemia-delete-inexistente';
+
+        const excluir = (id: string, usuario = USUARIO_ID) =>
+            request(app.getHttpServer())
+            .delete(`/glycemias/${id}`)
+            .set('Authorization', 'Bearer token')
+            .set('x-user', usuario);
+
+        beforeAll(async() =>{
+            await db.query('DELETE FROM glicemias WHERE id IN (?, ?)', [idProprio, idOutro]);
+
+            await db.query(`INSERT INTO glicemias (id, usuario_id, valor, momento, status, data_hora) VALUES (?, ?, 100, 'jejum', 'normal', NOW()), (?, ?, 100, 'jejum', 'normal', NOW())`, [idProprio, USUARIO_ID, idOutro, 'usuario-2']);
+        });
+
+        afterAll(async() =>{
+            await db.query( 'DELETE FROM glicemias WHERE id IN (?, ?)',  [idProprio, idOutro]);
+        });
+
+        it('exclui glicemia', async() =>{
+            await excluir(idProprio).expect(204);
+
+            const resultado = await db.query( 'SELECT id FROM glicemias WHERE id = ?', [idProprio]);
+            expect(resultado).toHaveLength(0);
+        });
+
+        it('não exclui glicemia do outro', async() =>{
+            await excluir(idOutro).expect(404);
+
+            const resultado = await db.query('SELECT id FROM glicemias WHERE id = ?',  [idOutro]);
+            expect(resultado).toHaveLength(1);
+        });
+
+        it(' 404 para ID inexistente', async() =>{
+            await excluir(idInexistente).expect(404);
+        });
+
+        it('exige token', async () => {
+            await request(app.getHttpServer())
+            .delete(`/glycemias/${idOutro}`)
+            .expect(401);
+        });
+    });
 });
 
 });
