@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { DataSource } from 'typeorm';
 import { CreateInsulinDto } from './dto/create-insulin.dto';
+import { ListInsulinDto } from './dto/list-insulin.dto';
 
 @Injectable()
 export class InsulinService implements OnModuleInit {
@@ -47,4 +48,39 @@ export class InsulinService implements OnModuleInit {
 
     return { id, ...dto };
   }
+
+async findAll(userId: string, filtros: ListInsulinDto) {
+  let sql = `
+    SELECT id, tipo, dose_ui AS doseUi, local_aplicacao AS localAplicacao, data_hora AS dataHora, observacao
+    FROM insulinas WHERE usuario_id = ?
+ `;
+
+  const params: unknown[] = [userId];
+
+  if (filtros.startDate) {
+    sql += ' AND data_hora >= ?';
+    params.push(new Date(filtros.startDate));
+  }
+
+  if (filtros.endDate) {
+    sql += ' AND data_hora <= ?';
+    params.push(new Date(filtros.endDate));
+  }
+
+  if (filtros.tipo) {
+    sql += ' AND tipo = ?';
+    params.push(filtros.tipo);
+  }
+
+  sql += ' ORDER BY data_hora DESC';
+
+  const linhas = await this.dataSource.query(sql, params);
+
+  return linhas.map((l: { doseUi: string }) => ({
+    ...l,
+    doseUi: Number(l.doseUi),
+  }));
+}
+
+
 }
