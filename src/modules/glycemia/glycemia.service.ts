@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, OnModuleInit, Param } from '@nestjs/common';
+import { BadRequestException, Injectable, OnModuleInit, Param , NotFoundException} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { DataSource } from 'typeorm';
 import { CreateGlycemiaDto } from './dto/create-glycemia.dto';
@@ -94,5 +94,20 @@ async findAll(userId: string, filtros: ListGlycemiaDto){
 
   return this.dataSource.query(sql, params);
 }
+
+//----------------------------------------------------------------
+    
+async findOne(userId: string, id: string){
+    
+  const linhas = await this.dataSource.query(
+    `SELECT id, valor, momento, status, data_hora AS dataHora, observacao FROM glicemias WHERE id = ? AND usuario_id = ? LIMIT 1`, [id, userId] );
+
+  if (linhas.length === 0) {
+    throw new NotFoundException('Glicemia não encontrada');
+  }
+
+  return linhas[0];
+}
+
 
 }

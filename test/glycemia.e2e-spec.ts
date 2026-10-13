@@ -199,6 +199,31 @@ const datas = '?startDate=11-10-2026&endDate=11-10-2026';
 });
 
 //--------------------------------------------------------------------------------------
+    const buscar = (usuario: string, id: string) =>
+    request(app.getHttpServer())
+        .get(`/glycemias/${id}`)
+        .set('Authorization', 'Bearer token')
+        .set('x-user', usuario);
+
+    
+    it('consulta glicemia do usuário', async() =>{
+    const res = await buscar('lista-1', 'lista-a');
+
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe('lista-a');
+    });
+
+    it(' 404 para ID inexistente', async() =>{
+    const res = await buscar('lista-1', 'id-inexistente');
+
+    expect(res.status).toBe(404);
+    });
+
+    it('retorna 404 para glicemia de outro usuário', async() =>{
+    const res = await buscar('lista-1', 'lista-d');
+
+    expect(res.status).toBe(404);
+    });
 
 
 });

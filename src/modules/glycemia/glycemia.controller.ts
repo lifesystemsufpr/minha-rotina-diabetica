@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards, Get, Query } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards, Get, Query, Param} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CreateGlycemiaDto } from './dto/create-glycemia.dto';
@@ -36,4 +36,18 @@ export class GlycemiaController{
     return this.service.findAll(req.user.id, filtros);}
 
 //-----------------------------------------------------------------------------------
+        
+    @Get(':id')
+    @ApiOperation({ summary: 'Consultar glicemia por ID' })
+    @ApiResponse({ status: 200, description: 'Glicemia encontrada' })
+    @ApiResponse({ status: 401, description: 'Token inválido ou ausente' })
+    @ApiResponse({ status: 404, description: 'Glicemia não encontrada' })
+
+    findOne(
+    @Req() req: { user: { id: string } },
+    @Param('id') id: string){
+
+    return this.service.findOne(req.user.id, id);
+    }
+
 }
