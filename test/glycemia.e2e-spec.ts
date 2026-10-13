@@ -14,17 +14,25 @@ jest.mock('@nestjs/passport', () => ({
 
 jest.setTimeout(30000);
 
+
 const USUARIO_ID = 'usuario-1';
 
-
-const fakeGuard = {
-  canActivate: (context: ExecutionContext) => {
+const fakeGuard ={
+  canActivate: (context: ExecutionContext) =>{
     const req = context.switchToHttp().getRequest();
-    if (!req.headers.authorization) throw new UnauthorizedException();
-    req.user = { id: USUARIO_ID };
+
+    if (!req.headers.authorization){
+      throw new UnauthorizedException();
+    }
+
+    req.user ={
+      id: req.headers['x-user'] || USUARIO_ID,
+    };
+
     return true;
   },
 };
+
 
 const body = {
   valor: 110,
@@ -51,7 +59,7 @@ describe('POST /glycemias', () =>{
       port: Number(process.env.DATABASE_PORT),
       username: process.env.DATABASE_USER,
       password: process.env.DATABASE_PASSWORD,
-      database: process.env.DATABASE_NAME,
+      database: process.env.DATABASE_NAME
     });
     await db.initialize();
 
@@ -84,7 +92,6 @@ describe('POST /glycemias', () =>{
 
   it('registro válido 201 ', async () => {
     const res = await enviar(body);
-    console.log(res.body);
     expect(res.status).toBe(201);
 
     const linhas = await db.query('SELECT usuario_id FROM glicemias WHERE id = ?', [res.body.id]);
@@ -108,7 +115,6 @@ describe('POST /glycemias', () =>{
 
     for (const invalido of invalidos) {
         const res = await enviar({ ...body, ...invalido });
-        console.log(invalido, res.status);
         expect(res.status).toBe(400);
     }
     });
@@ -123,4 +129,76 @@ describe('POST /glycemias', () =>{
     const res = await request(app.getHttpServer()).post('/glycemias').send(body);
     expect(res.status).toBe(401);
   });
+
+//----------------------------------listar----------------------------------------------
+
+  describe('GET /glycemias', () => {
+  const listar = (usuario: string, filtros = '') =>
+
+    request(app.getHttpServer())
+      .get(`/glycemias${filtros}`)
+      .set('Authorization', 'Bearer token')
+      .set('x-user', usuario);
+
+  const ids = (res: { body: { id: string }[] }) =>
+    res.body.map((i) => i.id);
+
+  beforeAll(async () => {
+    await db.query("DELETE FROM glicemias WHERE usuario_id LIKE 'lista-%'");
+
+    const dados = [
+      ['lista-a', 'lista-1', 100, 'jejum', '2026-10-10 08:00:00'],
+      ['lista-b', 'lista-1', 150, 'antes_refeicao', '2026-10-12 08:00:00'],
+      ['lista-c', 'lista-1', 110, 'jejum', '2026-10-11 08:00:00'],
+      ['lista-d', 'lista-2', 90, 'jejum', '2026-10-11 09:00:00']
+    ];
+
+    for (const linha of dados) {
+      await db.query( `INSERT INTO glicemias (id, usuario_id, valor, momento, status, data_hora) VALUES (?, ?, ?, ?, 'normal', ?)`,linha );
+    }
+  });
+
+  it('retorna 200 em ordem decrescente de data', async() =>{
+    const res = await listar('lista-1');
+
+    expect(res.status).toBe(200);
+    expect(ids(res)).toEqual(['lista-b', 'lista-c', 'lista-a']);
+  });
+
+  it('retorna somente dados do próprio usuário', async() =>{
+    expect(ids(await listar('lista-2'))).toEqual(['lista-d']);
+  });
+
+  it('retorna 200 e lista vazia sem dados', async() =>{
+    const res = await listar('lista-sem-dados');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it('filtra por momento, startDate e endDate', async() =>{
+    expect(ids(await listar('lista-1', '?momento=antes_refeicao')))
+      .toEqual(['lista-b']);
+
+    
+const datas = '?startDate=11-10-2026&endDate=11-10-2026';
+
+
+    expect(ids(await listar('lista-1', datas))).toEqual(['lista-c']);
+  });
+
+  it('retorna 400 para filtro inválido', async () => {
+    expect((await listar('lista-1', '?momento=madrugada')).status).toBe(400);
+  });
+
+  it('retorna 401 sem token', async () => {
+    const res = await request(app.getHttpServer()).get('/glycemias');
+
+    expect(res.status).toBe(401);
+  });
+});
+
+//--------------------------------------------------------------------------------------
+
+
 });

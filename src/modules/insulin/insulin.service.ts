@@ -9,7 +9,7 @@ import { UpdateInsulinDto } from './dto/update-insulin.dto';
 export class InsulinService implements OnModuleInit {
   constructor(private readonly dataSource: DataSource) {}
 
-  // Roda uma vez quando a API sobe: cria a tabela se ela não existir
+  
   async onModuleInit() {
     await this.dataSource.query(`
 
@@ -29,7 +29,6 @@ export class InsulinService implements OnModuleInit {
     `);
   }
 
-  // Grava a aplicação para o usuário que veio do token
   async create(userId: string, dto: CreateInsulinDto) {
     const id = randomUUID();
 

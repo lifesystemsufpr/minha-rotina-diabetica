@@ -1,8 +1,9 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards, Get, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CreateGlycemiaDto } from './dto/create-glycemia.dto';
 import { GlycemiaService } from './glycemia.service';
+import { ListGlycemiaDto } from './dto/list-glycemia.dto';
 
 @ApiTags('glycemias')
 @ApiBearerAuth('JWT-auth')
@@ -23,4 +24,16 @@ export class GlycemiaController{
     @Body() dto: CreateGlycemiaDto){
     return this.service.create(req.user.id, dto);
   }
+//-------------------------------LISTAR------------------------------------------  
+
+    @Get()
+    @ApiResponse({ status: 200, description: 'Lista de glicemias' })
+    @ApiResponse({ status: 400, description: 'Filtro inválido' })
+    @ApiResponse({ status: 401, description: 'Token ausente ou inválido' })
+    findAll(
+    @Req() req: { user: { id: string } },
+    @Query() filtros: ListGlycemiaDto,){
+    return this.service.findAll(req.user.id, filtros);}
+
+//-----------------------------------------------------------------------------------
 }

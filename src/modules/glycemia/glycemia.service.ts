@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable, OnModuleInit, Param } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { DataSource } from 'typeorm';
 import { CreateGlycemiaDto } from './dto/create-glycemia.dto';
 import { GlycemiaStatus } from './enums/glycemia.enums';
+import { ListGlycemiaDto } from './dto/list-glycemia.dto';
 
 
 const LIMITE_BAIXA = 70;
@@ -59,4 +60,39 @@ export class GlycemiaService implements OnModuleInit {
 
     return {id,valor: dto.valor, momento: dto.momento,  status, dataHora,  observacao: dto.observacao ?? null };
     }
+
+//----------------------------------------------------------------------------------------------------------------------
+
+    
+async findAll(userId: string, filtros: ListGlycemiaDto){
+  let sql = `SELECT id, valor, momento, status, data_hora AS dataHora, observacao FROM glicemias WHERE usuario_id = ?`;
+
+  const params: unknown[] = [userId];
+
+  if (filtros.startDate){
+    const [dia, mes, ano] = filtros.startDate.split('-');
+    const dataInicial = `${ano}-${mes}-${dia} 00:00:00`;
+
+    sql += ' AND data_hora >= ?';
+    params.push(dataInicial);
+  }
+
+  if (filtros.endDate){
+    const [dia, mes, ano] = filtros.endDate.split('-');
+    const dataFinal = `${ano}-${mes}-${dia}`;
+
+    sql += ' AND data_hora < DATE_ADD(?, INTERVAL 1 DAY)';
+    params.push(dataFinal);
+  }
+
+  if (filtros.momento){
+    sql += ' AND momento = ?';
+    params.push(filtros.momento);
+  }
+
+  sql += ' ORDER BY data_hora DESC';
+
+  return this.dataSource.query(sql, params);
+}
+
 }
