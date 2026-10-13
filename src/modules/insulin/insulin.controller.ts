@@ -14,7 +14,7 @@ import {UpdateInsulinDto } from './dto/update-insulin.dto';
 export class InsulinController {
   constructor(private readonly service: InsulinService) {}
 
-  @Post() // POST já responde 201 por padrão
+  @Post() 
   @ApiOperation({ summary: 'Registrar uma aplicação de insulina' })
   @ApiResponse({ status: 201, description: 'Aplicação criada' })
   @ApiResponse({ status: 400, description: 'Dados inválidos (ex.: dose <= 0)' })

@@ -26,7 +26,7 @@ export class CreateInsulinDto {
   // ---------- data e hora ----------
   @ApiProperty({
     description: 'Data e hora da aplicação',
-    example: '2026-10-12T08:30:00.000Z',
+    example: '12-10-2026T08:30:00.000Z',
   })
   @IsDateString({}, { message: 'dataHora deve ser uma data válida' })
   dataHora!: string;

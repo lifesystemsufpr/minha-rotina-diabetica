@@ -17,8 +17,6 @@ jest.setTimeout(30000);
 const USUARIO_ID = 'usuario-1';
 const ID_TESTE = 'insulina-teste-1';
 
-// Guard de mentira: sem Authorization dá 401, com Authorization define o usuário
-
 const fakeGuard = {
   canActivate: (context: ExecutionContext) => {
     const req = context.switchToHttp().getRequest();

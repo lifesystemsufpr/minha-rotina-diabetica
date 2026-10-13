@@ -4,6 +4,6 @@ import { Insulina } from './entities/insulina.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Insulina])],
-  exports: [TypeOrmModule],
+  exports: [TypeOrmModule]
 })
 export class InsulinModule {}
