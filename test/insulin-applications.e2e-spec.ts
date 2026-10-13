@@ -102,8 +102,6 @@ describe('POST /insulin-applications', () => {
 
     expect(res.status).toBe(201);
 
-//-------------------------------------------------------------------------------
-
     // confere no MySQL que a linha existe e é do usuário do token
     const linhas = await db.query(
       'SELECT usuario_id FROM insulinas WHERE id = ?',
@@ -198,5 +196,84 @@ describe('POST /insulin-applications', () => {
     });
 
     });
+
+
+ //---------------------------------------------------------------------------------------------
+
+ //----------------------- ID-----------------------------------
+ describe('Operações por ID', () =>{
+  const idProprio = 'id-proprio';
+  const idOutro = 'id-outro';
+  const idInexistente = 'id-inexistente';
+
+  const requisicao = ( metodo: 'get' | 'patch' | 'delete', id: string, usuario = USUARIO_ID) =>
+
+    request(app.getHttpServer())
+      [metodo](`/insulin-applications/${id}`)
+      .set('Authorization', 'Bearer token')
+      .set('x-user', usuario);
+
+  beforeAll(async () => {
+    await db.query(
+      `INSERT INTO insulinas (id, usuario_id, tipo, dose_ui, local_aplicacao, data_hora)
+       VALUES (?, ?, 'rapida', 20, 'abdomen', NOW()), (?, ?, 'rapida', 20, 'abdomen', NOW())`, [idProprio, USUARIO_ID, idOutro, 'usuario-2'],);
+  });
+
+  afterAll(async () => {
+    await db.query( 'DELETE FROM insulinas WHERE id IN (?, ?)',[idProprio, idOutro], );
+  });
+
+//-----------------------------------CONSULTA-----------------------------------------
+
+  it('consulta aplicação do próprio usuário', async () =>{
+    const resposta = await requisicao('get', idProprio).expect(200);
+    expect(resposta.body.id).toBe(idProprio);
+  });
+
+  it.each([idOutro, idInexistente])(
+    'retorna 404 ao consultar: %s', (id) => requisicao('get', id).expect(404),
+  );
+
+// ---------------------------------EDICAO----------------------------------------
+
+  it('edita aplicação:', async () => {
+    await requisicao('patch', idProprio)
+      .send({ doseUi: 15 })
+      .expect(200);
+
+    const resultado = await db.query('SELECT dose_ui FROM insulinas WHERE id = ?',  [idProprio]);
+
+    expect(Number(resultado[0].dose_ui)).toBe(15);
+  });
+
+  it.each([
+    { doseUi: 0 },
+    { userId: 'outro-usuario' },
+    {}])('rejeita dados inválidos ou vazios: %j', (dados: object) => requisicao('patch', idProprio).send(dados).expect(400), );
+
+  it('não edita aplicação de outro usuário', async ()=>{
+
+    await requisicao('patch', idOutro)
+      .send({ doseUi: 99 })
+      .expect(404);
+  });
+
+//------------------------------------------------------EXCLUSAO-----------------------------------------
+  it('exclui aplicação', async () => {
+    await requisicao('delete', idProprio).expect(200);
+
+    const resultado = await db.query( 'SELECT id FROM insulinas WHERE id = ?',[idProprio]);
+
+    expect(resultado).toHaveLength(0);
+  });
+
+  it.each([idOutro, idInexistente])(
+    'retorna 404 ao excluir: %s',(id) => requisicao('delete', id).expect(404));
+
+//---------------------------AUTORIZACAO--------------------------------------------------
+
+  it.each(['get', 'patch', 'delete'] as const)('exige token na rota %s',(metodo) =>
+      request(app.getHttpServer()) [metodo](`/insulin-applications/${idOutro}`) .expect(401) );
+  });
 
 });

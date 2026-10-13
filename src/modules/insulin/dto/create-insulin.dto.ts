@@ -1,18 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsDateString,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsPositive,
-  IsString,
-  MaxLength,
-} from 'class-validator';
+import { IsDateString, IsEnum, IsNumber, IsOptional, IsPositive, IsString, MaxLength,} from 'class-validator';
 import { ApplicationSite, InsulinType } from '../enums/insulin.enums';
 
-// Dados que o app envia ao registrar uma aplicação de insulina.
-// Não existe usuarioId aqui: o dono do registro vem do token.
+
 export class CreateInsulinDto {
+
   // ---------- tipo da insulina ----------
   @ApiProperty({ enum: InsulinType, example: InsulinType.RAPIDA })
   @IsEnum(InsulinType, { message: 'tipo deve ser basal, rapida ou mista' })
@@ -33,10 +25,10 @@ export class CreateInsulinDto {
 
   // ---------- data e hora ----------
   @ApiProperty({
-    description: 'Data e hora da aplicação (ISO 8601)',
+    description: 'Data e hora da aplicação',
     example: '2026-10-12T08:30:00.000Z',
   })
-  @IsDateString({}, { message: 'dataHora deve ser uma data válida (ISO 8601)' })
+  @IsDateString({}, { message: 'dataHora deve ser uma data válida' })
   dataHora!: string;
 
   // ---------- observação (opcional) ----------
