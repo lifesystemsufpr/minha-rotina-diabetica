@@ -5,8 +5,6 @@ import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { Perfil } from './entities/perfil.entity';
 
-// O repositório de usuários não é exportado: outros módulos (como Auth)
-// devem usar o UsersService quando ele existir, nunca a tabela direto.
 @Module({
   imports: [TypeOrmModule.forFeature([User, Perfil])],
   controllers: [UsersController],

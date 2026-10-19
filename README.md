@@ -39,6 +39,7 @@ Backend do projeto Minha Rotina Diabética, construído com NestJS.
 - Todas as rotas têm o prefixo `/api` (ex.: `POST /api/users`). No mobile, a `baseURL` deve terminar em `/api`.
 - Todo erro sai no mesmo formato, com `details` por campo em erros de validação. Veja [`docs/errors.md`](docs/errors.md).
 - Regras de validação de DTOs: [`docs/validation.md`](docs/validation.md).
+- Exclusão de conta (soft delete) e seus efeitos: [`docs/account-deletion.md`](docs/account-deletion.md).
 - CORS: sem `CORS_ORIGIN`, qualquer origem é aceita (desenvolvimento). Em produção, defina `CORS_ORIGIN` com as origens separadas por vírgula.
 
 ## Documentação da API (Swagger)

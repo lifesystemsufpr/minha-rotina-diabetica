@@ -76,6 +76,7 @@ describe('AuthService', () => {
         nome: 'Maria',
         email: 'maria@example.com',
         senhaHash,
+        ativo: true,
       });
       const result = await service.login({ email: 'maria@example.com', senha });
 
@@ -91,6 +92,20 @@ describe('AuthService', () => {
       users.findByEmailWithPassword.mockResolvedValue({ id: 'u', senhaHash });
       const err = await service
         .login({ email: 'maria@example.com', senha: 'errada-123' })
+        .catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(UnauthorizedException);
+      expect((err as UnauthorizedException).message).toBe(INVALID_CREDENTIALS);
+      expect(jwt.sign).not.toHaveBeenCalled();
+    });
+
+    it('conta excluída (inativa): mesma resposta da senha inválida', async () => {
+      users.findByEmailWithPassword.mockResolvedValue({
+        id: 'u',
+        senhaHash,
+        ativo: false,
+      });
+      const err = await service
+        .login({ email: 'maria@example.com', senha })
         .catch((e: unknown) => e);
       expect(err).toBeInstanceOf(UnauthorizedException);
       expect((err as UnauthorizedException).message).toBe(INVALID_CREDENTIALS);

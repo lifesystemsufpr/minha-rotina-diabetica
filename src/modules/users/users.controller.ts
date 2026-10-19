@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Post,
   UseGuards,
   UnauthorizedException,
@@ -9,7 +11,10 @@ import {
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -60,5 +65,23 @@ export class UsersController {
     // Token válido de usuário que não existe mais
     if (!user) throw new UnauthorizedException();
     return toUserResponse(user);
+  }
+
+  @Delete('me')
+  @HttpCode(204)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiNoContentResponse({
+    description:
+      'Conta marcada como inativa (soft delete). Dados de glicemia, insulina, lembretes e perfil permanecem no banco, associados ao usuário inativo.',
+  })
+  @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
+  @ApiConflictResponse({ description: 'Conta já está inativa' })
+  @ApiUnauthorizedResponse({
+    description: 'Token ausente, inválido, expirado ou de conta excluída',
+    type: ErrorResponseDto,
+  })
+  async deleteAccount(@CurrentUser('id') usuarioId: string): Promise<void> {
+    await this.users.deleteAccount(usuarioId);
   }
 }

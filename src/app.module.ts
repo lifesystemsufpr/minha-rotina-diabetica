@@ -8,6 +8,7 @@ import { GlycemiaModule } from './modules/glycemia/glycemia.module';
 import { InsulinModule } from './modules/insulin/insulin.module';
 import { RemindersModule } from './modules/reminders/reminders.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ProfileModule } from './modules/profile/profile.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AuthModule } from './modules/auth/auth.module';
     GlycemiaModule,
     InsulinModule,
     RemindersModule,
+    ProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService],

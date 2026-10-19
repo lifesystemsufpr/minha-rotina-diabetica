@@ -122,7 +122,13 @@ describe('UsersService', () => {
       await service.findByEmailWithPassword('maria@example.com');
       expect(repo.findOne).toHaveBeenCalledWith({
         where: { email: 'maria@example.com' },
-        select: { id: true, nome: true, email: true, senhaHash: true },
+        select: {
+          id: true,
+          nome: true,
+          email: true,
+          senhaHash: true,
+          ativo: true,
+        },
       });
     });
   });
