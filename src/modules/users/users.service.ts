@@ -1,16 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { EmailAlreadyExistsException } from '../../common/exceptions';
 import { toUserResponse, UserResponseDto } from './dto/user-response.dto';
 import { User } from './entities/user.entity';
+import { Perfil } from './entities/perfil.entity';
+import { TipoDiabetes } from './enums/tipo-diabetes.enum';
 
 // NÃO é o CreateUserDto da API: a senha já chega como hash (quem faz o hash
 // é o AuthService), então texto puro de senha nunca passa por este módulo.
+
+export interface CreatePerfilData {
+  dataNascimento: string;
+  tipoDiabetes: TipoDiabetes;
+  alturaCm: number;
+  pesoKg: number;
+  contatoEmergencia: { nome: string; relacao: string; telefone: string };
+}
+
 export interface CreateUserData {
   nome: string;
   email: string;
   senhaHash: string;
+  perfil: CreatePerfilData;
 }
 
 // Violação de UNIQUE: MySQL (produção) e SQLite (testes e2e).
@@ -35,6 +47,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    private readonly dataSource: DataSource,
   ) {}
 
   // Uso interno. Não traz senhaHash (coluna com select: false).
@@ -72,17 +85,34 @@ export class UsersService {
     }
 
     try {
-      const saved = await this.usersRepository.save(
-        this.usersRepository.create({
-          nome: data.nome.trim(),
-          email,
-          senhaHash: data.senhaHash,
-        }),
-      );
+      const saved = await this.dataSource.transaction(async (manager) => {
+        const user = await manager.save(
+          manager.create(User, {
+            nome: data.nome.trim(),
+            email,
+            senhaHash: data.senhaHash,
+          }),
+        );
+
+        const { perfil } = data;
+        user.perfil = await manager.save(
+          manager.create(Perfil, {
+            user,
+            dataNascimento: perfil.dataNascimento,
+            tipoDiabetes: perfil.tipoDiabetes,
+            alturaCm: perfil.alturaCm,
+            pesoKg: perfil.pesoKg,
+            contatoEmergenciaNome: perfil.contatoEmergencia.nome,
+            contatoEmergenciaRelacao: perfil.contatoEmergencia.relacao,
+            contatoEmergenciaTelefone: perfil.contatoEmergencia.telefone,
+          }),
+        );
+        return user;
+      });
       return toUserResponse(saved);
     } catch (error) {
-      // Dois cadastros simultâneos podem passar pelo existsBy; o índice
-      // UNIQUE do banco é a garantia final.
+      // Corrida entre dois cadastros: o índice UNIQUE do banco é a garantia final
+      // (a transação já foi revertida).
       if (isUniqueViolation(error)) {
         throw new EmailAlreadyExistsException(email);
       }

@@ -9,13 +9,18 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { TipoDiabetes } from '../enums/tipo-diabetes.enum';
+import { columnNumericTransformer } from '../../../common/transformers/column-numeric.transformer';
 
 @Entity('perfis')
 export class Perfil {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'data_nascimento', type: 'date', nullable: true })
+  @Column({
+    name: 'data_nascimento',
+    type: 'date',
+    nullable: true,
+  })
   dataNascimento: string;
 
   @Column({
@@ -32,6 +37,7 @@ export class Perfil {
     precision: 5,
     scale: 2,
     nullable: true,
+    transformer: columnNumericTransformer,
   })
   alturaCm: number;
 
@@ -41,6 +47,7 @@ export class Perfil {
     precision: 5,
     scale: 2,
     nullable: true,
+    transformer: columnNumericTransformer,
   })
   pesoKg: number;
 

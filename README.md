@@ -117,3 +117,183 @@ export class GlicemiasController {
 2. **Sem token:** clique em Authorize → Logout e chame `GET /users/me` → `401`.
 3. **Token inválido:** autorize com o token alterado (mude os últimos caracteres) → `401`.
 4. **Token expirado:** defina `JWT_EXPIRATION=10s` no `.env`, reinicie, faça login, espere 10 segundos e chame `GET /users/me` → `401`. Depois volte para o valor anterior.
+
+### Contrato de cadastro e login
+
+Fluxo de autenticação do app: **cadastro** cria a conta e o perfil inicial; **login** valida e-mail e senha e devolve o JWT usado nas rotas privadas.
+
+> **Atenção (mobile):** o campo de senha se chama `senha`, não `password`. Qualquer campo que não esteja no contrato (incluindo `password`) é rejeitado com `400`, tanto no cadastro quanto no login. A senha nunca é alterada pela API (sem trim, sem conversão).
+
+#### `POST /api/auth/register`
+
+Cria o usuário e o perfil inicial na mesma transação: ou grava os dois, ou nenhum.
+
+| Status | Quando |
+| --- | --- |
+| `201` | Conta e perfil criados |
+| `400` | Payload inválido, campo obrigatório ausente ou campo extra enviado |
+| `409` | E-mail já cadastrado (a comparação ignora maiúsculas/minúsculas) |
+
+**Request**
+
+```json
+{
+  "nome": "Maria Silva",
+  "email": "maria@example.com",
+  "senha": "senha-forte-123",
+  "confirmarSenha": "senha-forte-123",
+  "dataNascimento": "1995-04-12",
+  "tipoDiabetes": "TIPO_1",
+  "alturaCm": 170.5,
+  "pesoKg": 68.3,
+  "contatoEmergencia": {
+    "nome": "João Silva",
+    "relacao": "Pai",
+    "telefone": "(41) 99999-9999"
+  }
+}
+```
+
+**Regras dos campos**
+
+| Campo | Tipo | Obrigatório | Regra |
+| --- | --- | --- | --- |
+| `nome` | string | sim | Não vazio, até 100 caracteres. Espaços nas pontas são removidos |
+| `email` | string | sim | E-mail válido, até 100 caracteres. Salvo em minúsculas e sem espaços nas pontas |
+| `senha` | string | sim | De 8 a 72 caracteres, com letras e números (regra do protótipo). Armazenada somente como hash (bcrypt) |
+| `confirmarSenha` | string | não | Se enviada, deve ser igual a `senha`. Nunca é persistida nem devolvida |
+| `dataNascimento` | string | sim | Formato `AAAA-MM-DD`, data real (rejeita `2020-02-30`), não futura e a partir de `1900-01-01` |
+| `tipoDiabetes` | string | sim | `TIPO_1`, `TIPO_2` ou `OUTRO` |
+| `alturaCm` | number | sim | De 30 a 272, até 2 casas decimais. Aceita número ou texto numérico (`"170.5"`) |
+| `pesoKg` | number | sim | De 1 a 500, até 2 casas decimais. Aceita número ou texto numérico (`"68.3"`) |
+| `contatoEmergencia.nome` | string | sim | Não vazio, até 100 caracteres |
+| `contatoEmergencia.relacao` | string | sim | Não vazio, até 50 caracteres |
+| `contatoEmergencia.telefone` | string | sim | De 8 a 20 caracteres; somente números, espaços e `+ ( ) -` |
+
+**Response `201`**
+
+```json
+{
+  "id": "3f2b8c1e-7a4d-4e9b-9d57-0a1b2c3d4e5f",
+  "nome": "Maria Silva",
+  "email": "maria@example.com",
+  "createdAt": "2026-10-09T15:00:00.000Z",
+  "perfil": {
+    "dataNascimento": "1995-04-12",
+    "tipoDiabetes": "TIPO_1",
+    "alturaCm": 170.5,
+    "pesoKg": 68.3,
+    "contatoEmergencia": {
+      "nome": "João Silva",
+      "relacao": "Pai",
+      "telefone": "(41) 99999-9999"
+    }
+  }
+}
+```
+
+A resposta nunca contém senha, `confirmarSenha` nem hash. O cadastro **não** faz login automático: para obter o token, chame `POST /api/auth/login`.
+
+#### `POST /api/auth/login`
+
+| Status | Quando |
+| --- | --- |
+| `200` | Credenciais válidas |
+| `400` | Payload inválido ou campo extra |
+| `401` | E-mail ou senha incorretos |
+
+**Request**
+
+```json
+{ "email": "maria@example.com", "senha": "senha-forte-123" }
+```
+
+| Campo | Tipo | Obrigatório | Regra |
+| --- | --- | --- | --- |
+| `email` | string | sim | E-mail válido. Espaços e maiúsculas são normalizados (`" Maria@Example.com "` funciona) |
+| `senha` | string | sim | Não vazia, até 72 caracteres. Enviada exatamente como digitada |
+
+**Response `200`**
+
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "3f2b8c1e-7a4d-4e9b-9d57-0a1b2c3d4e5f",
+    "nome": "Maria Silva",
+    "email": "maria@example.com"
+  }
+}
+```
+
+- Envie o token nas rotas privadas: `Authorization: Bearer <accessToken>`.
+- Validade definida por `JWT_EXPIRATION` (padrão do `.env.example`: `1d`). Quando expira, a rota privada responde `401` e o app deve pedir novo login.
+- O payload do token tem somente `sub` (id do usuário), `iat` e `exp`.
+
+**Credenciais inválidas (`401`)**
+
+Senha errada e e-mail não cadastrado recebem exatamente a mesma resposta, para não revelar quais e-mails existem na base:
+
+```json
+{
+  "statusCode": 401,
+  "error": "Unauthorized",
+  "message": "E-mail ou senha inválidos",
+  "timestamp": "2026-10-09T15:00:00.000Z",
+  "path": "/api/auth/login",
+  "method": "POST"
+}
+```
+
+#### Erros
+
+Todos os erros seguem o formato padrão descrito em [`docs/errors.md`](docs/errors.md). Em `400`, o campo `details` traz um item por campo inválido, e campos aninhados usam ponto (`contatoEmergencia.telefone`):
+
+```json
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "Erro de validação",
+  "timestamp": "2026-10-09T15:00:00.000Z",
+  "path": "/api/auth/register",
+  "method": "POST",
+  "details": [
+    { "field": "senha", "messages": ["senha must be longer than or equal to 8 characters"] },
+    { "field": "contatoEmergencia.telefone", "messages": ["telefone deve conter apenas números, espaços e + ( ) - (8 a 20 caracteres)"] }
+  ]
+}
+```
+
+Campo não previsto no contrato também gera `400`, com a mensagem `property <campo> should not exist` no item correspondente de `details`.
+
+`409` no cadastro:
+
+```json
+{
+  "statusCode": 409,
+  "error": "Conflict",
+  "message": "O e-mail \"maria@example.com\" já está cadastrado.",
+  "timestamp": "2026-10-09T15:00:00.000Z",
+  "path": "/api/auth/register",
+  "method": "POST"
+}
+```
+
+#### Garantias de segurança
+
+- A senha só existe em texto puro dentro do `AuthService`, durante o hash. A coluna `senha_hash` tem `select: false`, então nenhuma consulta comum a traz.
+- O e-mail é único: verificado antes de criar a conta e protegido por índice UNIQUE no banco contra cadastros simultâneos.
+- O backend não confia no cliente: `id`, `isAdmin`, `senhaHash` e qualquer outra propriedade fora do contrato são rejeitados.
+- O login gasta o mesmo tempo para e-mail inexistente e senha errada, o que dificulta descobrir e-mails cadastrados pelo tempo de resposta.
+
+#### Teste rápido (curl)
+
+```bash
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"nome":"Maria Silva","email":"maria@example.com","senha":"senha-forte-123","dataNascimento":"1995-04-12","tipoDiabetes":"TIPO_1","alturaCm":170.5,"pesoKg":68.3,"contatoEmergencia":{"nome":"João Silva","relacao":"Pai","telefone":"(41) 99999-9999"}}'
+
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"maria@example.com","senha":"senha-forte-123"}'
+```
