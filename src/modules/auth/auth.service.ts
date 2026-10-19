@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotImplementedException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
@@ -12,7 +8,7 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { UserResponseDto } from '../users/dto/user-response.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 
-const BCRYPT_ROUNDS = 10;
+export const BCRYPT_ROUNDS = 10;
 // Hash descartável: faz o login gastar o mesmo tempo com e-mail inexistente
 const DUMMY_HASH = bcrypt.hashSync('senha-descartavel', BCRYPT_ROUNDS);
 
@@ -55,15 +51,4 @@ export class AuthService {
     const payload: JwtPayload = { sub: userId }; // sem senha/hash/dados sensíveis
     return this.jwt.sign(payload);
   }
-
-  // Assinaturas para fluxos futuros (não implementar nesta sprint)
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  forgotPassword(_email: string): Promise<void> {
-    throw new NotImplementedException();
-  }
-
-  resetPassword(_token: string, _novaSenha: string): Promise<void> {
-    throw new NotImplementedException();
-  }
-  /* eslint-enable @typescript-eslint/no-unused-vars */
 }

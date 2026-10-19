@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, QueryFailedError, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  QueryFailedError,
+  Repository,
+} from 'typeorm';
 import { EmailAlreadyExistsException } from '../../common/exceptions';
 import { toUserResponse, UserResponseDto } from './dto/user-response.dto';
 import { User } from './entities/user.entity';
@@ -58,6 +63,15 @@ export class UsersService {
     return this.usersRepository.findOne({ where: { id } });
   }
 
+  // Usuário + perfil para GET /users/me. Não traz senhaHash.
+  async findByIdWithPerfil(id: string): Promise<User | null> {
+    if (!id) return null; // mesma guarda de findById
+    return this.usersRepository.findOne({
+      where: { id },
+      relations: { perfil: true },
+    });
+  }
+
   // Uso interno. Não traz senhaHash.
   async findByEmail(email: string): Promise<User | null> {
     if (!email?.trim()) return null;
@@ -74,6 +88,18 @@ export class UsersService {
       where: { email: normalizeEmail(email) },
       select: { id: true, nome: true, email: true, senhaHash: true },
     });
+  }
+
+  // Troca o hash da senha (fluxo de redefinição). Recebe só o hash; aceita o
+  // EntityManager da transação do chamador.
+  async updatePasswordHash(
+    userId: string,
+    senhaHash: string,
+    manager?: EntityManager,
+  ): Promise<void> {
+    if (!userId) return; // update com id vazio poderia atingir todas as linhas
+    const repo = manager ? manager.getRepository(User) : this.usersRepository;
+    await repo.update({ id: userId }, { senhaHash });
   }
 
   // Chamado pelo AuthService no cadastro. Devolve só os campos públicos.

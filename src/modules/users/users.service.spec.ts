@@ -13,6 +13,7 @@ describe('UsersService', () => {
   const repo = {
     findOne: jest.fn(),
     existsBy: jest.fn(),
+    update: jest.fn(),
     create: jest.fn((data: Partial<User>) => ({ ...data })),
     save: jest.fn(),
   };
@@ -66,6 +67,37 @@ describe('UsersService', () => {
         service.findById(undefined as unknown as string),
       ).resolves.toBeNull();
       expect(repo.findOne).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findByIdWithPerfil', () => {
+    it('carrega o perfil junto e filtra só pelo id informado', async () => {
+      repo.findOne.mockResolvedValue(savedUser);
+      await service.findByIdWithPerfil('uuid-1');
+      expect(repo.findOne).toHaveBeenCalledWith({
+        where: { id: 'uuid-1' },
+        relations: { perfil: true },
+      });
+    });
+
+    it('não consulta o banco com id vazio', async () => {
+      await expect(service.findByIdWithPerfil('')).resolves.toBeNull();
+      expect(repo.findOne).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updatePasswordHash', () => {
+    it('atualiza só o usuário informado', async () => {
+      await service.updatePasswordHash('uuid-1', 'novo-hash');
+      expect(repo.update).toHaveBeenCalledWith(
+        { id: 'uuid-1' },
+        { senhaHash: 'novo-hash' },
+      );
+    });
+
+    it('não faz update com id vazio (evita atingir todas as linhas)', async () => {
+      await service.updatePasswordHash('', 'novo-hash');
+      expect(repo.update).not.toHaveBeenCalled();
     });
   });
 

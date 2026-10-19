@@ -297,3 +297,18 @@ curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"maria@example.com","senha":"senha-forte-123"}'
 ```
+
+#### `GET /api/users/me` (Bearer)
+200 → `{ id, nome, email, createdAt, perfil: { dataNascimento, tipoDiabetes, alturaCm, pesoKg, contatoEmergencia: { nome, relacao, telefone } } }`
+401 → token ausente, inválido, expirado ou usuário removido. Nunca retorna senha/hash.
+
+#### `POST /api/auth/forgot-password`
+Body: `{ "email": "maria@example.com" }`
+200 → `{ "message": "Se o e-mail estiver cadastrado, enviaremos as instruções para redefinir a senha." }`
+(sempre igual, exista a conta ou não). 400 → e-mail inválido.
+Token: uso único, expira em `PASSWORD_RESET_TOKEN_TTL_MINUTES` (padrão 30), guardado só como hash.
+
+#### `POST /api/auth/reset-password`
+Body: `{ "token": "<recebido por e-mail>", "novaSenha": "8 a 72 caracteres, com letras e números" }`
+200 → `{ "message": "Senha redefinida com sucesso." }`
+400 → payload inválido ou token inválido/expirado/já usado (mesma mensagem: "Token inválido ou expirado").
