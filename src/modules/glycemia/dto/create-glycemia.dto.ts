@@ -1,28 +1,38 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsNumber, IsOptional, IsPositive, IsString, Matches, MaxLength } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  Max,
+  MaxLength,
+} from 'class-validator';
+import { MomentoGlicemia } from '../enums/momento-glicemia.enum';
 
-const MOMENTOS = ['jejum', 'antes_refeicao', 'pos_refeicao', 'ao_dormir', 'outro'];
-
-
+// O status (NORMAL/ALTA/BAIXA) não faz parte da entrada: é calculado pela API.
 export class CreateGlycemiaDto {
+  // decimal(5,2) no banco: até 999,99
   @ApiProperty({ example: 110, description: 'Valor em mg/dL' })
-  @IsNumber()
+  @IsNumber({ allowNaN: false, allowInfinity: false, maxDecimalPlaces: 2 })
   @IsPositive()
+  @Max(999.99)
   valor!: number;
 
-  @ApiProperty({ enum: MOMENTOS, example: 'jejum' })
-  @IsIn(MOMENTOS)
-  momento!: string;
+  @ApiProperty({ enum: MomentoGlicemia, example: MomentoGlicemia.JEJUM })
+  @IsEnum(MomentoGlicemia)
+  momento!: MomentoGlicemia;
 
-  @ApiProperty({ example: '15-09-2026', description: 'DD-MM-AAAA' })
-  @Matches(/^\d{2}-\d{2}-\d{4}$/, { message: 'data deve estar no formato DD-MM-AAAA' })
-  data!: string;
+  @ApiProperty({
+    example: '2026-10-12T08:30:00-03:00',
+    description:
+      'Data e hora da medição em ISO 8601 (o app junta os campos data e hora)',
+  })
+  @IsDateString({ strict: true })
+  dataHora!: string;
 
-  @ApiProperty({ example: '08:30', description: 'HH:mm' })
-  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'hora deve estar no formato HH:mm' })
-  hora!: string;
-
-  @ApiPropertyOptional({ example: 'Antes do café' })
+  @ApiPropertyOptional({ example: 'Depois de caminhar', maxLength: 255 })
   @IsOptional()
   @IsString()
   @MaxLength(255)

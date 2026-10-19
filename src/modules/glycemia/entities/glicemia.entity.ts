@@ -7,6 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+import { columnNumericTransformer } from '../../../common/transformers/column-numeric.transformer';
 import { User } from '../../users/entities/user.entity';
 import { MomentoGlicemia } from '../enums/momento-glicemia.enum';
 import { StatusGlicemia } from '../enums/status-glicemia.enum';
@@ -19,7 +20,12 @@ export class Glicemia {
   @Column({ name: 'data_hora', type: 'datetime' })
   dataHora: Date;
 
-  @Column({ type: 'decimal', precision: 5, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    transformer: columnNumericTransformer,
+  })
   valor: number;
 
   @Column({ type: 'simple-enum', enum: MomentoGlicemia })
