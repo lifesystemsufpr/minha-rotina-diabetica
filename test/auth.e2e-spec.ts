@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { createTestApp } from './utils/create-test-app';
+import { validRegisterPayload } from './utils/valid-register-payload';
 
 interface LoginBody {
   accessToken: string;
@@ -29,7 +30,7 @@ describe('Auth + rota protegida', () => {
 
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ nome: 'Teste', email, senha })
+      .send(validRegisterPayload({ nome: 'Teste', email, senha }))
       .expect(201);
 
     const res = await request(app.getHttpServer())
@@ -83,11 +84,13 @@ describe('Auth + rota protegida', () => {
   it('register não retorna senha nem hash', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({
-        nome: 'Outro',
-        email: 'outro@teste.local',
-        senha: 'senha-forte-123',
-      })
+      .send(
+        validRegisterPayload({
+          nome: 'Outro',
+          email: 'outro@teste.local',
+          senha: 'senha-forte-123',
+        }),
+      )
       .expect(201);
     const body = res.body as UserBody;
     expect(body).not.toHaveProperty('senha');
@@ -140,16 +143,21 @@ describe('Auth + rota protegida', () => {
       'email',
       'id',
       'nome',
+      'perfil',
     ]);
   });
 
-  it('register recusa senha sem letras e números (400)', () =>
-    request(app.getHttpServer())
+  it('register recusa senha sem letras e números (400)', async () => {
+    const res = await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({
-        nome: 'Fraca',
-        email: 'fraca@teste.local',
-        senha: 'somenteletras',
-      })
-      .expect(400));
+      .send(
+        validRegisterPayload({
+          email: 'fraca@teste.local',
+          senha: 'somenteletras',
+        }),
+      )
+      .expect(400);
+    const fields = (res.body as { details?: { field: string }[] }).details;
+    expect(fields?.map((d) => d.field)).toContain('senha');
+  });
 });

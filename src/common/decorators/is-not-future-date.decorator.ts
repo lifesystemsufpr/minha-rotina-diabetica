@@ -1,29 +1,42 @@
-import { buildMessage, ValidateBy, ValidationOptions } from 'class-validator';
+import { registerDecorator, ValidationOptions } from 'class-validator';
 
-function hojeLocal(): string {
-  const hoje = new Date();
-  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-  const dia = String(hoje.getDate()).padStart(2, '0');
-  return `${hoje.getFullYear()}-${mes}-${dia}`;
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+// Data de hoje (AAAA-MM-DD) no fuso do servidor, sem converter para UTC.
+function todayLocal(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
 }
 
-// Recusa datas depois de hoje. Compara só a parte AAAA-MM-DD, sem passar por
-// Date, para não depender de fuso. Use junto com @IsDateString().
 export function IsNotFutureDate(
+  minDate = '1900-01-01',
   validationOptions?: ValidationOptions,
-): PropertyDecorator {
-  return ValidateBy(
-    {
+) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
       name: 'isNotFutureDate',
+      target: object.constructor,
+      propertyName,
+      options: validationOptions,
       validator: {
-        validate: (value: unknown) =>
-          typeof value === 'string' && value.slice(0, 10) <= hojeLocal(),
-        defaultMessage: buildMessage(
-          (eachPrefix) => `${eachPrefix}$property não pode ser uma data futura`,
-          validationOptions,
-        ),
+        validate(value: unknown): boolean {
+          if (typeof value !== 'string' || !DATE_ONLY.test(value)) return false;
+          const parsed = new Date(`${value}T00:00:00.000Z`);
+          // rejeita datas inexistentes (ex.: 2026-02-30)
+          if (
+            Number.isNaN(parsed.getTime()) ||
+            parsed.toISOString().slice(0, 10) !== value
+          ) {
+            return false;
+          }
+          return value <= todayLocal() && value >= minDate;
+        },
+        defaultMessage(): string {
+          return `${propertyName} deve ser uma data válida (AAAA-MM-DD), não futura e a partir de ${minDate}`;
+        },
       },
-    },
-    validationOptions,
-  );
+    });
+  };
 }

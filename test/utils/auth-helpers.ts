@@ -2,10 +2,11 @@ import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import { validRegisterPayload } from './valid-register-payload';
 
 export const SENHA_TESTE = 'senhaForte123';
 
-// Cadastra e faz login de um usuário de teste; devolve o token e o id (sub).
+// Cadastra (com perfil) e faz login de um usuário de teste; devolve o token e o id (sub).
 export async function registerAndLogin(
   app: INestApplication<App>,
   email: string,
@@ -13,7 +14,7 @@ export async function registerAndLogin(
 ): Promise<{ token: string; userId: string }> {
   await request(app.getHttpServer())
     .post('/api/auth/register')
-    .send({ nome, email, senha: SENHA_TESTE })
+    .send(validRegisterPayload({ nome, email, senha: SENHA_TESTE }))
     .expect(201);
 
   const res = await request(app.getHttpServer())
