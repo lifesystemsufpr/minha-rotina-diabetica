@@ -14,6 +14,10 @@ import { EmailAlreadyExistsException } from '../../common/exceptions';
 import { toUserResponse, UserResponseDto } from './dto/user-response.dto';
 import { User } from './entities/user.entity';
 import { Perfil } from './entities/perfil.entity';
+import { Glicemia } from '../glycemia/entities/glicemia.entity';
+import { Insulina } from '../insulin/entities/insulina.entity';
+import { Lembrete } from '../reminders/entities/lembrete.entity';
+import { PasswordResetToken } from '../auth/entities/password-reset-token.entity';
 import { TipoDiabetes } from './enums/tipo-diabetes.enum';
 
 // NÃO é o CreateUserDto da API: a senha já chega como hash (quem faz o hash
@@ -157,6 +161,10 @@ export class UsersService {
     }
   }
 
+  // Exclusão de conta (LGPD, art. 18, VI): apaga os dados de saúde e de
+  // recuperação de senha e anonimiza a conta, na mesma transação. A linha de
+  // usuarios fica como registro inativo e sem dados pessoais; o e-mail é
+  // liberado para um novo cadastro. Ver docs/account-deletion.md.
   async deleteAccount(usuarioId: string): Promise<void> {
     const user = await this.usersRepository.findOne({
       where: { id: usuarioId },
@@ -170,7 +178,33 @@ export class UsersService {
       throw new ConflictException('Esta conta já está inativa.');
     }
 
-    user.ativo = false;
-    await this.usersRepository.save(user);
+    await this.dataSource.transaction(async (manager) => {
+      for (const entity of [
+        Perfil,
+        Glicemia,
+        Insulina,
+        Lembrete,
+        PasswordResetToken,
+      ]) {
+        await manager
+          .createQueryBuilder()
+          .delete()
+          .from(entity)
+          .where('usuario_id = :id', { id: user.id })
+          .execute();
+      }
+
+      await manager.update(
+        User,
+        { id: user.id },
+        {
+          ativo: false,
+          nome: 'Conta excluída',
+          email: `excluido-${user.id}@conta-excluida.invalid`,
+          // Não é um hash bcrypt válido: nenhuma senha confere com ele.
+          senhaHash: '!',
+        },
+      );
+    });
   }
 }
