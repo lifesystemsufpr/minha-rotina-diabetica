@@ -1,10 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ContatoEmergenciaResponseDto } from '../../users/dto/user-response.dto';
 import { TipoDiabetes } from '../../users/enums/tipo-diabetes.enum';
 
 // Campos do perfil são opcionais no banco, então podem vir nulos.
 export class ProfileResponseDto {
   @ApiProperty({ example: 'Maria Silva' })
   nome!: string;
+
+  @ApiProperty({
+    example: '1995-04-12',
+    nullable: true,
+    type: String,
+    description: 'AAAA-MM-DD',
+  })
+  dataNascimento!: string | null;
 
   @ApiProperty({
     example: 31,
@@ -23,12 +32,6 @@ export class ProfileResponseDto {
   @ApiProperty({ enum: TipoDiabetes, nullable: true })
   tipoDiabetes!: TipoDiabetes | null;
 
-  @ApiProperty({ example: 'João Silva', nullable: true, type: String })
-  contatoEmergenciaNome!: string | null;
-
-  @ApiProperty({ example: 'Irmão', nullable: true, type: String })
-  contatoEmergenciaRelacao!: string | null;
-
-  @ApiProperty({ example: '+5541999998888', nullable: true, type: String })
-  contatoEmergenciaTelefone!: string | null;
+  @ApiProperty({ type: ContatoEmergenciaResponseDto, nullable: true })
+  contatoEmergencia!: ContatoEmergenciaResponseDto | null;
 }

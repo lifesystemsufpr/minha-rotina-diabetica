@@ -12,6 +12,22 @@ function toNumberOrNull(value: number | string | null): number | null {
   return value === null || value === undefined ? null : Number(value);
 }
 
+// Converte o DTO (contato aninhado) para as colunas da entidade Perfil.
+// Só inclui os campos enviados, para o PATCH alterar apenas eles.
+function toPerfilColumns(dto: UpdateProfileDto): Partial<Perfil> {
+  const { contatoEmergencia, ...rest } = dto;
+  return {
+    ...rest,
+    ...(contatoEmergencia
+      ? {
+          contatoEmergenciaNome: contatoEmergencia.nome,
+          contatoEmergenciaRelacao: contatoEmergencia.relacao,
+          contatoEmergenciaTelefone: contatoEmergencia.telefone,
+        }
+      : {}),
+  };
+}
+
 @Injectable()
 export class ProfileService {
   constructor(
@@ -24,7 +40,7 @@ export class ProfileService {
     usuarioId: string,
   ): Promise<Perfil> {
     const perfil = this.perfilRepository.create({
-      ...createProfileDto,
+      ...toPerfilColumns(createProfileDto),
       user: { id: usuarioId },
     });
 
@@ -63,7 +79,7 @@ export class ProfileService {
       throw new NotFoundException('Perfil não encontrado para este usuário.');
     }
 
-    Object.assign(perfil, updateProfileDto);
+    Object.assign(perfil, toPerfilColumns(updateProfileDto));
 
     const perfilAtualizado = await this.perfilRepository.save(perfil);
 
@@ -73,13 +89,18 @@ export class ProfileService {
   private toResponseDto(perfil: Perfil): ProfileResponseDto {
     return {
       nome: perfil.user.nome,
+      dataNascimento: perfil.dataNascimento ?? null,
       idade: calcularIdade(perfil.dataNascimento),
       alturaCm: toNumberOrNull(perfil.alturaCm),
       pesoKg: toNumberOrNull(perfil.pesoKg),
       tipoDiabetes: perfil.tipoDiabetes ?? null,
-      contatoEmergenciaNome: perfil.contatoEmergenciaNome ?? null,
-      contatoEmergenciaRelacao: perfil.contatoEmergenciaRelacao ?? null,
-      contatoEmergenciaTelefone: perfil.contatoEmergenciaTelefone ?? null,
+      contatoEmergencia: perfil.contatoEmergenciaNome
+        ? {
+            nome: perfil.contatoEmergenciaNome,
+            relacao: perfil.contatoEmergenciaRelacao,
+            telefone: perfil.contatoEmergenciaTelefone,
+          }
+        : null,
     };
   }
 }
