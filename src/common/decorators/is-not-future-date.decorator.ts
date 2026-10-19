@@ -2,6 +2,14 @@ import { registerDecorator, ValidationOptions } from 'class-validator';
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
+// Data de hoje (AAAA-MM-DD) no fuso do servidor, sem converter para UTC.
+function todayLocal(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
 export function IsNotFutureDate(
   minDate = '1900-01-01',
   validationOptions?: ValidationOptions,
@@ -23,8 +31,7 @@ export function IsNotFutureDate(
           ) {
             return false;
           }
-          const today = new Date().toISOString().slice(0, 10);
-          return value <= today && value >= minDate;
+          return value <= todayLocal() && value >= minDate;
         },
         defaultMessage(): string {
           return `${propertyName} deve ser uma data válida (AAAA-MM-DD), não futura e a partir de ${minDate}`;

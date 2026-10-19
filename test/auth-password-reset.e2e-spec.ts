@@ -24,9 +24,6 @@ import { User } from '../src/modules/users/entities/user.entity';
 import { createTestApp } from './utils/create-test-app';
 import { validRegisterPayload } from './utils/valid-register-payload';
 
-process.env.JWT_SECRET ??= 'segredo-somente-para-teste';
-process.env.JWT_EXPIRATION ??= '15m';
-
 describe('Recuperação de senha (e2e)', () => {
   let app: INestApplication<App>;
   let tokens: Repository<PasswordResetToken>;
@@ -134,6 +131,7 @@ describe('Recuperação de senha (e2e)', () => {
       ['senha ausente', { token: 'abc' }],
       ['senha curta', { token: 'abc', novaSenha: '123' }],
       ['senha > 72', { token: 'abc', novaSenha: 'a'.repeat(73) }],
+      ['senha sem números', { token: 'abc', novaSenha: 'somenteletras' }],
       ['propriedade extra', { token: 'abc', novaSenha: senhaNova, x: 1 }],
     ])('payload inválido (%s): 400', async (_n, body) => {
       await reset(body).expect(400);

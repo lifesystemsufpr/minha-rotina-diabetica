@@ -8,9 +8,6 @@ import { User } from '../src/modules/users/entities/user.entity';
 import { createTestApp } from './utils/create-test-app';
 import { validRegisterPayload } from './utils/valid-register-payload';
 
-process.env.JWT_SECRET ??= 'segredo-somente-para-teste';
-process.env.JWT_EXPIRATION ??= '15m';
-
 interface MeBody {
   id: string;
   nome: string;

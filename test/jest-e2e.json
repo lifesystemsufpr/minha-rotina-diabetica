@@ -3,8 +3,9 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
+  "setupFiles": ["<rootDir>/setup-env.ts"],
   "transform": {
-    "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": "<rootDir>/tsconfig.e2e.json" }]
+    "^.+\\.(t|j)s$": "ts-jest"
   },
   "transformIgnorePatterns": [
     "/node_modules/(?!@nestjs/config)"
