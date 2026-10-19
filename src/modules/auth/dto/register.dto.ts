@@ -7,6 +7,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -22,6 +23,7 @@ import {
   trimLowercase,
 } from '../../../common/transformers/string.transformers';
 import { TipoDiabetes } from '../../users/enums/tipo-diabetes.enum';
+import { PASSWORD_PATTERN, PASSWORD_PATTERN_MESSAGE } from '../password-policy';
 import { ContatoEmergenciaDto } from './contato-emergencia.dto';
 export class RegisterDto {
   @ApiProperty()
@@ -37,11 +39,16 @@ export class RegisterDto {
   @MaxLength(100)
   email!: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    minLength: 8,
+    maxLength: 72,
+    description: 'De 8 a 72 caracteres, com letras e números',
+  })
   @Transform(raw)
   @IsString()
   @MinLength(8)
   @MaxLength(72)
+  @Matches(PASSWORD_PATTERN, { message: PASSWORD_PATTERN_MESSAGE })
   senha!: string;
 
   @ApiPropertyOptional()

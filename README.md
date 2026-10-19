@@ -84,7 +84,7 @@ npm run test:e2e   # testes e2e (usam SQLite em memória, não precisam de MySQL
 
 ## Autenticação (JWT Bearer)
 
-Variáveis obrigatórias no `.env`: `JWT_SECRET` (string longa e aleatória) e `JWT_EXPIRATION` (ex.: `15m`). A aplicação não sobe sem elas. O payload do token tem só `sub` (id do usuário), mais `iat` e `exp`.
+Variáveis obrigatórias no `.env`: `JWT_SECRET` (string longa e aleatória) e `JWT_EXPIRATION` (ex.: `1d`, o valor do `.env.example`). A aplicação não sobe sem elas. O payload do token tem só `sub` (id do usuário), mais `iat` e `exp`.
 
 Fluxo: `POST /api/auth/register` → `POST /api/auth/login` (retorna `{ "accessToken": "..." }`) → enviar `Authorization: Bearer <accessToken>` nas rotas privadas.
 
@@ -116,7 +116,7 @@ export class GlicemiasController {
 1. **Token válido:** `POST /auth/login`, copie o `accessToken`, clique em **Authorize**, cole o token e chame `GET /users/me` → `200`.
 2. **Sem token:** clique em Authorize → Logout e chame `GET /users/me` → `401`.
 3. **Token inválido:** autorize com o token alterado (mude os últimos caracteres) → `401`.
-4. **Token expirado:** defina `JWT_EXPIRATION=10s` no `.env`, reinicie, faça login, espere 10 segundos e chame `GET /users/me` → `401`. Depois volte para `15m`.
+4. **Token expirado:** defina `JWT_EXPIRATION=10s` no `.env`, reinicie, faça login, espere 10 segundos e chame `GET /users/me` → `401`. Depois volte para o valor anterior.
 
 ### Contrato de cadastro e login
 
@@ -160,7 +160,7 @@ Cria o usuário e o perfil inicial na mesma transação: ou grava os dois, ou ne
 | --- | --- | --- | --- |
 | `nome` | string | sim | Não vazio, até 100 caracteres. Espaços nas pontas são removidos |
 | `email` | string | sim | E-mail válido, até 100 caracteres. Salvo em minúsculas e sem espaços nas pontas |
-| `senha` | string | sim | De 8 a 72 caracteres. Armazenada somente como hash (bcrypt) |
+| `senha` | string | sim | De 8 a 72 caracteres, com letras e números (regra do protótipo). Armazenada somente como hash (bcrypt) |
 | `confirmarSenha` | string | não | Se enviada, deve ser igual a `senha`. Nunca é persistida nem devolvida |
 | `dataNascimento` | string | sim | Formato `AAAA-MM-DD`, data real (rejeita `2020-02-30`), não futura e a partir de `1900-01-01` |
 | `tipoDiabetes` | string | sim | `TIPO_1`, `TIPO_2` ou `OUTRO` |

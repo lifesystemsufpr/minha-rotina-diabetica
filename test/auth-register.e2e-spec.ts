@@ -9,9 +9,6 @@ import { User } from '../src/modules/users/entities/user.entity';
 import { createTestApp } from './utils/create-test-app';
 import { validRegisterPayload } from './utils/valid-register-payload';
 
-process.env.JWT_SECRET ??= 'segredo-somente-para-teste';
-process.env.JWT_EXPIRATION ??= '15m';
-
 describe('POST /auth/register (e2e)', () => {
   let app: INestApplication<App>;
   let dataSource: DataSource;

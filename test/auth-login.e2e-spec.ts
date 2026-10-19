@@ -6,9 +6,6 @@ import { ErrorResponseDto } from '../src/common/dto/error-response.dto';
 import { createTestApp } from './utils/create-test-app';
 import { validRegisterPayload } from './utils/valid-register-payload';
 
-process.env.JWT_SECRET ??= 'segredo-somente-para-teste';
-process.env.JWT_EXPIRATION ??= '15m';
-
 interface LoginBody {
   accessToken: string;
   user: { id: string; nome: string; email: string };
