@@ -7,6 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+import { columnNumericTransformer } from '../../../common/transformers/column-numeric.transformer';
 import { User } from '../../users/entities/user.entity';
 import { LocalAplicacao } from '../enums/local-aplicacao.enum';
 
@@ -23,7 +24,13 @@ export class Insulina {
   @Column({ type: 'varchar', length: 50 })
   tipo: string;
 
-  @Column({ name: 'dose_ui', type: 'decimal', precision: 6, scale: 2 })
+  @Column({
+    name: 'dose_ui',
+    type: 'decimal',
+    precision: 6,
+    scale: 2,
+    transformer: columnNumericTransformer,
+  })
   doseUi: number;
 
   @Column({

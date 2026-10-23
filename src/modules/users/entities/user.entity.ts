@@ -25,8 +25,11 @@ export class User {
   @Column({ type: 'varchar', length: 100, unique: true })
   email: string;
 
-  @Column({ name: 'senha_hash', type: 'varchar', length: 255 })
+  @Column({ name: 'senha_hash', type: 'varchar', length: 255, select: false })
   senhaHash: string;
+
+  @Column({ type: 'boolean', default: true })
+  ativo: boolean;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
