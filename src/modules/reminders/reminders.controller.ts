@@ -4,110 +4,137 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
-  Req,
   UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
-  ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { RemindersService } from './reminders.service';
-import { CreateReminderDto } from './dto/create-reminder.dto';
-import { UpdateReminderDto } from './dto/update-reminder.dto';
-import { UpdateReminderStatusDto } from './dto/update-reminder-status.dto';
-import { ReminderResponseDto } from './dto/reminder-response.dto';
+import { ErrorResponseDto } from '../../common/dto/error-response.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-
-interface RequestWithUser extends Request {
-  user: { id: string };
-}
+import { CreateReminderDto } from './dto/create-reminder.dto';
+import { ReminderResponseDto } from './dto/reminder-response.dto';
+import { UpdateReminderStatusDto } from './dto/update-reminder-status.dto';
+import { UpdateReminderDto } from './dto/update-reminder.dto';
+import { RemindersService } from './reminders.service';
 
 @ApiTags('reminders')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiUnauthorizedResponse({
+  description: 'Token ausente, inválido, expirado ou de conta excluída',
+  type: ErrorResponseDto,
+})
 @Controller('reminders')
 export class RemindersController {
   constructor(private readonly remindersService: RemindersService) {}
 
   @Post()
   @ApiOperation({ summary: 'Cria um lembrete (status inicia como ATIVO)' })
-  @ApiResponse({ status: 201, type: ReminderResponseDto })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiCreatedResponse({ type: ReminderResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Dados inválidos',
+    type: ErrorResponseDto,
+  })
   create(
-    @Req() request: RequestWithUser,
+    @CurrentUser('id') usuarioId: string,
     @Body() createReminderDto: CreateReminderDto,
   ): Promise<ReminderResponseDto> {
-    return this.remindersService.create(createReminderDto, request.user.id);
+    return this.remindersService.create(createReminderDto, usuarioId);
   }
 
   @Get()
   @ApiOperation({
     summary: 'Lista os lembretes do usuário, ordenados por data/horário',
   })
-  @ApiResponse({ status: 200, type: [ReminderResponseDto] })
-  findAll(@Req() request: RequestWithUser): Promise<ReminderResponseDto[]> {
-    return this.remindersService.findAll(request.user.id);
+  @ApiOkResponse({ type: [ReminderResponseDto] })
+  findAll(
+    @CurrentUser('id') usuarioId: string,
+  ): Promise<ReminderResponseDto[]> {
+    return this.remindersService.findAll(usuarioId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Retorna um lembrete do usuário' })
-  @ApiResponse({ status: 200, type: ReminderResponseDto })
-  @ApiNotFoundResponse({ description: 'Lembrete não encontrado' })
+  @ApiOkResponse({ type: ReminderResponseDto })
+  @ApiNotFoundResponse({
+    description: 'Não encontrado (ou de outro usuário)',
+    type: ErrorResponseDto,
+  })
   findOne(
-    @Req() request: RequestWithUser,
+    @CurrentUser('id') usuarioId: string,
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ReminderResponseDto> {
-    return this.remindersService.findOne(id, request.user.id);
+    return this.remindersService.findOne(id, usuarioId);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Edita título e/ou horário do lembrete' })
-  @ApiResponse({ status: 200, type: ReminderResponseDto })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiNotFoundResponse({ description: 'Lembrete não encontrado' })
+  @ApiOkResponse({ type: ReminderResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Dados inválidos ou nenhum campo enviado',
+    type: ErrorResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Não encontrado (ou de outro usuário)',
+    type: ErrorResponseDto,
+  })
   update(
-    @Req() request: RequestWithUser,
+    @CurrentUser('id') usuarioId: string,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateReminderDto: UpdateReminderDto,
   ): Promise<ReminderResponseDto> {
-    return this.remindersService.update(id, request.user.id, updateReminderDto);
+    return this.remindersService.update(id, usuarioId, updateReminderDto);
   }
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Altera o status do lembrete (ATIVO/INATIVO)' })
-  @ApiResponse({ status: 200, type: ReminderResponseDto })
-  @ApiResponse({ status: 400, description: 'Status inválido' })
-  @ApiNotFoundResponse({ description: 'Lembrete não encontrado' })
+  @ApiOkResponse({ type: ReminderResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Status inválido',
+    type: ErrorResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Não encontrado (ou de outro usuário)',
+    type: ErrorResponseDto,
+  })
   updateStatus(
-    @Req() request: RequestWithUser,
+    @CurrentUser('id') usuarioId: string,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateReminderStatusDto: UpdateReminderStatusDto,
   ): Promise<ReminderResponseDto> {
     return this.remindersService.updateStatus(
       id,
-      request.user.id,
+      usuarioId,
       updateReminderStatusDto,
     );
   }
 
   @Delete(':id')
-  @HttpCode(204)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Exclui o lembrete' })
   @ApiNoContentResponse({ description: 'Lembrete excluído' })
-  @ApiNotFoundResponse({ description: 'Lembrete não encontrado' })
-  async remove(
-    @Req() request: RequestWithUser,
+  @ApiNotFoundResponse({
+    description: 'Não encontrado (ou de outro usuário)',
+    type: ErrorResponseDto,
+  })
+  remove(
+    @CurrentUser('id') usuarioId: string,
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<void> {
-    await this.remindersService.remove(id, request.user.id);
+    return this.remindersService.remove(id, usuarioId);
   }
 }

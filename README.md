@@ -41,6 +41,7 @@ Backend do projeto Minha Rotina Diabética, construído com NestJS.
 - Regras de validação de DTOs: [`docs/validation.md`](docs/validation.md).
 - Exclusão de conta (LGPD) e seus efeitos: [`docs/account-deletion.md`](docs/account-deletion.md).
 - Glicemias e aplicações de insulina (rotas, enums, datas e status): [`docs/glycemia-insulin.md`](docs/glycemia-insulin.md).
+- Lembretes (rotas e status): [`docs/reminders.md`](docs/reminders.md).
 - CORS: sem `CORS_ORIGIN`, qualquer origem é aceita (desenvolvimento). Em produção, defina `CORS_ORIGIN` com as origens separadas por vírgula.
 
 ## Documentação da API (Swagger)

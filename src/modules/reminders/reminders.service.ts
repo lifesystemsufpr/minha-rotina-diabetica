@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Lembrete } from './entities/lembrete.entity';
@@ -49,6 +53,9 @@ export class RemindersService {
     usuarioId: string,
     updateReminderDto: UpdateReminderDto,
   ): Promise<ReminderResponseDto> {
+    if (Object.keys(updateReminderDto).length === 0) {
+      throw new BadRequestException('Informe ao menos um campo para atualizar');
+    }
     const lembrete = await this.findOwnedOrFail(id, usuarioId);
 
     if (updateReminderDto.titulo !== undefined) {
