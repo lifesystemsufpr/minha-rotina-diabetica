@@ -9,6 +9,8 @@ import { InsulinModule } from './modules/insulin/insulin.module';
 import { RemindersModule } from './modules/reminders/reminders.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ProfileModule } from './modules/profile/profile.module';
+import { ReportsModule } from './modules/reports/reports.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { ProfileModule } from './modules/profile/profile.module';
     InsulinModule,
     RemindersModule,
     ProfileModule,
+    ReportsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
