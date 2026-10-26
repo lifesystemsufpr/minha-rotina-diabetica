@@ -1,10 +1,21 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('glicemias')
 export class Glicemia {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ name: 'usuario_id', type: 'varchar', length: 36 })
+  usuarioId: string;
 
   @Column({ name: 'data_hora', type: 'datetime' })
   dataHora: Date;
@@ -13,7 +24,7 @@ export class Glicemia {
   valor: number;
 
   @Column({ type: 'varchar', length: 50 })
-  momento: string; 
+  momento: string;
 
   @Column({ type: 'varchar', length: 20, nullable: true })
   status: string;
@@ -27,7 +38,7 @@ export class Glicemia {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @ManyToOne(() => User, (user) => user.glicemias, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'usuario_id' })
   user: User;
 }
