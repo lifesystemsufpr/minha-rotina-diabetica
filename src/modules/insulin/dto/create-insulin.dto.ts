@@ -1,10 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsNumber, IsOptional, IsPositive, IsString, MaxLength,} from 'class-validator';
+import {IsDateString,IsEnum,IsNumber,IsOptional,IsPositive,IsString,MaxLength} from 'class-validator';
 import { ApplicationSite, InsulinType } from '../enums/insulin.enums';
 
-
 export class CreateInsulinDto {
-
   // ---------- tipo da insulina ----------
   @ApiProperty({ enum: InsulinType, example: InsulinType.RAPIDA })
   @IsEnum(InsulinType, { message: 'tipo deve ser basal, rapida ou mista' })
@@ -19,7 +17,7 @@ export class CreateInsulinDto {
   // ---------- local da aplicação ----------
   @ApiProperty({ enum: ApplicationSite, example: ApplicationSite.ABDOMEN })
   @IsEnum(ApplicationSite, {
-    message: 'localAplicacao deve ser abdomen, braco, coxa ou outro',
+    message: 'localAplicacao deve ser abdomen, braco, coxa ou gluteo',
   })
   localAplicacao!: ApplicationSite;
 
