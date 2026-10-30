@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDateString, IsOptional, Matches } from 'class-validator';
+import { IsNotBeforeProperty } from '../decorators/is-not-before-property.decorator';
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 const DATE_ONLY_MESSAGE = 'deve estar no formato AAAA-MM-DD';
@@ -24,5 +25,8 @@ export class DateRangeQueryDto {
   @IsOptional()
   @Matches(DATE_ONLY, { message: `endDate ${DATE_ONLY_MESSAGE}` })
   @IsDateString({ strict: true })
+  @IsNotBeforeProperty('startDate', {
+    message: 'endDate não pode ser anterior a startDate',
+  })
   endDate?: string;
 }
