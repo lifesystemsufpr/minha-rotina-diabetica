@@ -12,7 +12,12 @@ export function configureApp(app: INestApplication): void {
   const corsOrigins = process.env.CORS_ORIGIN?.split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
-  app.enableCors({ origin: corsOrigins?.length ? corsOrigins : true });
+  app.enableCors({
+    origin: corsOrigins?.length ? corsOrigins : true,
+    // Sem isso, um cliente web (ex.: Expo Web) não consegue ler o nome do
+    // arquivo de downloads, como o PDF de relatórios.
+    exposedHeaders: ['Content-Disposition'],
+  });
 
   app.useGlobalPipes(createValidationPipe());
   app.useGlobalFilters(new AllExceptionsFilter());

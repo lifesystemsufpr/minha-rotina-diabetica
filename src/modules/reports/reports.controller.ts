@@ -53,7 +53,22 @@ export class ReportsController {
   })
   @ApiProduces('application/pdf')
   @ApiOkResponse({
-    description: 'Arquivo PDF',
+    description: 'Arquivo PDF, enviado direto no corpo da resposta',
+    headers: {
+      'Content-Disposition': {
+        description:
+          'attachment; filename="relatorio-rotina-diabetica_<inicio>_a_<fim>.pdf"',
+        schema: { type: 'string' },
+      },
+      'Content-Length': {
+        description: 'Tamanho do arquivo em bytes',
+        schema: { type: 'integer' },
+      },
+      'Cache-Control': {
+        description: 'no-store: o relatório não deve ser guardado em cache',
+        schema: { type: 'string' },
+      },
+    },
     content: {
       'application/pdf': { schema: { type: 'string', format: 'binary' } },
     },
@@ -78,6 +93,7 @@ export class ReportsController {
       'Content-Disposition': `attachment; filename="${fileName}"`,
       'Content-Length': String(content.length),
       'Cache-Control': 'no-store', // dados de saúde: não guardar em cache
+      'X-Content-Type-Options': 'nosniff',
     });
     return new StreamableFile(content);
   }

@@ -348,3 +348,12 @@ quando for encaminhado a um médico.
 401 (token), 500 (falha ao gerar).
 
 **Mobile:** baixar enviando o header Authorization (não é abrível por link simples).
+
+**Download pelo app (React Native):** a API devolve o arquivo direto, sem URL
+temporária. Nada fica guardado no servidor nem acessível por link, então não há
+URL previsível nem relatório público. O app deve baixar enviando o header
+`Authorization: Bearer <token>`, salvar o arquivo em cache/documentos do
+aparelho (ex.: `expo-file-system` `downloadAsync` com `headers`, ou
+`react-native-blob-util`) e então abrir o compartilhamento nativo com o caminho
+local (ex.: `expo-sharing`). O nome sugerido está em `Content-Disposition`.
+Para clientes web, o `Content-Disposition` é exposto via CORS.
