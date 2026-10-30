@@ -8,5 +8,6 @@ import { GlycemiaService } from './glycemia.service';
   imports: [TypeOrmModule.forFeature([Glicemia])],
   controllers: [GlycemiaController],
   providers: [GlycemiaService],
+  exports: [GlycemiaService],
 })
 export class GlycemiaModule {}

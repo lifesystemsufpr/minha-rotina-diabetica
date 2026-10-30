@@ -36,7 +36,7 @@ Backend do projeto Minha Rotina Diabética, construído com NestJS.
 
 ## Convenções da API
 
-- Todas as rotas têm o prefixo `/api` (ex.: `POST /api/users`). No mobile, a `baseURL` deve terminar em `/api`.
+- Todas as rotas têm o prefixo `/api` (ex.: `POST /api/auth login`). No mobile, a `baseURL` deve terminar em `/api`.
 - Todo erro sai no mesmo formato, com `details` por campo em erros de validação. Veja [`docs/errors.md`](docs/errors.md).
 - Regras de validação de DTOs: [`docs/validation.md`](docs/validation.md).
 - Exclusão de conta (LGPD) e seus efeitos: [`docs/account-deletion.md`](docs/account-deletion.md).
@@ -315,3 +315,36 @@ Token: uso único, expira em `PASSWORD_RESET_TOKEN_TTL_MINUTES` (padrão 30), gu
 Body: `{ "token": "<recebido por e-mail>", "novaSenha": "8 a 72 caracteres, com letras e números" }`
 200 → `{ "message": "Senha redefinida com sucesso." }`
 400 → payload inválido ou token inválido/expirado/já usado (mesma mensagem: "Token inválido ou expirado").
+
+### Autorização de rotas privadas
+
+- Toda rota fora de `/auth/*` precisa de `JwtAuthGuard`. O teste `test/authorization.e2e-spec.ts` lista as rotas registradas e **falha** se aparecer rota nova sem guard que não esteja na lista `ROTAS_PUBLICAS` do próprio teste.
+- O dono do registro vem sempre de `@CurrentUser('id')`, nunca de body, query ou param. Campos como `usuarioId` ou `userId` no payload são rejeitados com `400`.
+- Busque registros por `{ id, user: { id: userId } }`. Registro de outro usuário responde `404`, igual a um id inexistente, para não revelar que ele existe. O projeto não usa `403` nesse caso.
+- Respostas usam DTOs de saída explícitos (nunca a entidade), para não vazar senha/hash nem campos internos.
+- Detalhes dos códigos de erro: [`docs/errors.md`](docs/errors.md).
+
+# Relatório em PDF
+
+GET /api/reports/pdf (requer Bearer token)
+
+| Query | Formato | Descrição |
+| --- | --- | --- |
+| startDate | AAAA-MM-DD, opcional | Início do período (inclusivo) |
+| endDate | AAAA-MM-DD, opcional | Fim do período (inclusivo, dia todo) |
+
+**Resposta 200:** Content-Type: application/pdf,
+Content-Disposition: attachment; filename="relatorio-rotina-diabetica_<inicio>_a_<fim>.pdf",
+Cache-Control: no-store. O arquivo vem direto no corpo (sem URL temporária).
+
+**Conteúdo:** título, período, data de geração, resumo (glicemias e insulina)
+e tabela de registros, do mais recente para o mais antigo. O PDF traz o nome do
+usuário (e nenhum outro dado pessoal), para identificar de quem é o relatório
+quando for encaminhado a um médico.
+
+**Sem registros no período:** 200 com PDF contendo "Nenhum registro encontrado".
+
+**Erros:** JSON no formato padrão (docs/errors.md): 400 (período inválido),
+401 (token), 500 (falha ao gerar).
+
+**Mobile:** baixar enviando o header Authorization (não é abrível por link simples).
