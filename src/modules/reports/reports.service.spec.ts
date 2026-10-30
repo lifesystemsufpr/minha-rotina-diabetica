@@ -126,12 +126,12 @@ describe('ReportsService', () => {
     const filtros = { startDate: '2026-10-01', endDate: '2026-10-13' };
 
     beforeEach(() => {
-      delete process.env.REPORT_PDF_INCLUDE_USER_NAME;
       glycemiaService.findAll.mockResolvedValue([
         glicemia('g1', '2026-10-12T11:30:00.000Z'),
       ]);
       insulinService.findAll.mockResolvedValue([]);
       pdfService.generate.mockResolvedValue(Buffer.from('%PDF-fake'));
+      usersService.findById.mockResolvedValue({ nome: 'Maria Silva' });
     });
 
     it('busca só os dados do usuário, no período, e devolve nome previsível', async () => {
@@ -152,23 +152,7 @@ describe('ReportsService', () => {
       expect(result.content.toString()).toBe('%PDF-fake');
     });
 
-    afterAll(() => {
-      delete process.env.REPORT_PDF_INCLUDE_USER_NAME;
-    });
-
-    it('não inclui o nome por padrão', async () => {
-      await service.generatePdf('user-1', filtros);
-
-      expect(usersService.findById).not.toHaveBeenCalled();
-      expect(pdfService.generate).toHaveBeenCalledWith(
-        expect.objectContaining({ userName: undefined }),
-      );
-    });
-
-    it('inclui o nome quando REPORT_PDF_INCLUDE_USER_NAME=true', async () => {
-      process.env.REPORT_PDF_INCLUDE_USER_NAME = 'true';
-      usersService.findById.mockResolvedValue({ nome: 'Maria Silva' });
-
+    it('inclui o nome do usuário no PDF', async () => {
       await service.generatePdf('user-1', filtros);
 
       expect(usersService.findById).toHaveBeenCalledWith('user-1');

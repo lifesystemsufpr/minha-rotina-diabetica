@@ -323,3 +323,28 @@ Body: `{ "token": "<recebido por e-mail>", "novaSenha": "8 a 72 caracteres, com 
 - Busque registros por `{ id, user: { id: userId } }`. Registro de outro usuário responde `404`, igual a um id inexistente, para não revelar que ele existe. O projeto não usa `403` nesse caso.
 - Respostas usam DTOs de saída explícitos (nunca a entidade), para não vazar senha/hash nem campos internos.
 - Detalhes dos códigos de erro: [`docs/errors.md`](docs/errors.md).
+
+# Relatório em PDF
+
+GET /api/reports/pdf (requer Bearer token)
+
+| Query | Formato | Descrição |
+| --- | --- | --- |
+| startDate | AAAA-MM-DD, opcional | Início do período (inclusivo) |
+| endDate | AAAA-MM-DD, opcional | Fim do período (inclusivo, dia todo) |
+
+**Resposta 200:** Content-Type: application/pdf,
+Content-Disposition: attachment; filename="relatorio-rotina-diabetica_<inicio>_a_<fim>.pdf",
+Cache-Control: no-store. O arquivo vem direto no corpo (sem URL temporária).
+
+**Conteúdo:** título, período, data de geração, resumo (glicemias e insulina)
+e tabela de registros, do mais recente para o mais antigo. O PDF traz o nome do
+usuário (e nenhum outro dado pessoal), para identificar de quem é o relatório
+quando for encaminhado a um médico.
+
+**Sem registros no período:** 200 com PDF contendo "Nenhum registro encontrado".
+
+**Erros:** JSON no formato padrão (docs/errors.md): 400 (período inválido),
+401 (token), 500 (falha ao gerar).
+
+**Mobile:** baixar enviando o header Authorization (não é abrível por link simples).

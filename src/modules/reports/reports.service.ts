@@ -69,12 +69,8 @@ export class ReportsService {
   ): Promise<{ fileName: string; content: Buffer }> {
     const records = await this.findRecords(userId, filtros);
 
-    // Identificação (só o nome) depende de aprovação: desligada por padrão.
-    // Para habilitar: REPORT_PDF_INCLUDE_USER_NAME=true no .env.
-    const incluirNome = process.env.REPORT_PDF_INCLUDE_USER_NAME === 'true';
-    const userName = incluirNome
-      ? (await this.usersService.findById(userId))?.nome
-      : undefined;
+    // Identificação mínima: só o nome, para o médico saber de quem é o relatório.
+    const userName = (await this.usersService.findById(userId))?.nome;
 
     const content = await this.pdfService.generate({
       userName,
