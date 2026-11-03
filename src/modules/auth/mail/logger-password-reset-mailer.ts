@@ -4,22 +4,13 @@ import {
   PasswordResetMailer,
 } from './password-reset-mailer';
 
-// Implementação provisória (sem envio real). Em desenvolvimento imprime o
-// token no log para o fluxo poder ser testado; em produção NÃO imprime o token.
+// Modo desabilitado para desenvolvimento/testes. Não imprime destinatário ou token.
 @Injectable()
 export class LoggerPasswordResetMailer extends PasswordResetMailer {
   private readonly logger = new Logger(LoggerPasswordResetMailer.name);
 
-  sendPasswordReset(data: PasswordResetMailData): Promise<void> {
-    if (process.env.NODE_ENV === 'production') {
-      this.logger.error(
-        'Nenhum provedor de e-mail configurado: e-mail de recuperação NÃO enviado.',
-      );
-      return Promise.resolve();
-    }
-    this.logger.warn(
-      `[SIMULADO] Recuperação de senha para ${data.to} | token: ${data.token} | expira em ${data.expiresAt.toISOString()}`,
-    );
+  sendPasswordReset(_data: PasswordResetMailData): Promise<void> {
+    this.logger.warn('Envio de recuperação desabilitado neste ambiente.');
     return Promise.resolve();
   }
 }

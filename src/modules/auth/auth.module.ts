@@ -7,7 +7,7 @@ import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
-import { LoggerPasswordResetMailer } from './mail/logger-password-reset-mailer';
+import { createPasswordResetMailer } from './mail/smtp-password-reset-mailer';
 import { PasswordResetMailer } from './mail/password-reset-mailer';
 import { PasswordResetService } from './password-reset.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -37,8 +37,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     AuthService,
     JwtStrategy,
     PasswordResetService,
-    // Troque useClass pela implementação real de e-mail quando existir.
-    { provide: PasswordResetMailer, useClass: LoggerPasswordResetMailer },
+    { provide: PasswordResetMailer, inject: [ConfigService], useFactory: createPasswordResetMailer },
   ],
   exports: [AuthService],
 })

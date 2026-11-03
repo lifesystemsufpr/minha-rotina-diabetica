@@ -39,6 +39,7 @@ Backend do projeto Minha Rotina Diabética, construído com NestJS.
 - Todas as rotas têm o prefixo `/api` (ex.: `POST /api/users`). No mobile, a `baseURL` deve terminar em `/api`.
 - Todo erro sai no mesmo formato, com `details` por campo em erros de validação. Veja [`docs/errors.md`](docs/errors.md).
 - Regras de validação de DTOs: [`docs/validation.md`](docs/validation.md).
+- Recuperação de senha, SMTP e links do mobile: [`docs/password-recovery.md`](docs/password-recovery.md).
 - Exclusão de conta (LGPD) e seus efeitos: [`docs/account-deletion.md`](docs/account-deletion.md).
 - Glicemias e aplicações de insulina (rotas, enums, datas e status): [`docs/glycemia-insulin.md`](docs/glycemia-insulin.md).
 - Lembretes (rotas e status): [`docs/reminders.md`](docs/reminders.md).
