@@ -5,19 +5,26 @@ import { AppModule } from '../../src/app.module';
 import { configureApp } from '../../src/app.setup';
 import { DatabaseModule } from '../../src/database/database.module';
 import { TestDatabaseModule } from './test-database.module';
+import {
+  AUTH_RATE_POLICY,
+  AuthRatePolicy,
+} from '../../src/modules/auth/auth-rate-policy';
 
 // Sobe a API com a mesma configuração do main.ts (prefixo /api, validação e
 // filtro de erros), trocando o MySQL por SQLite em memória.
 export async function createTestApp(
   extraControllers: Type[] = [],
+  ratePolicy?: AuthRatePolicy,
 ): Promise<INestApplication<App>> {
-  const moduleFixture = await Test.createTestingModule({
+  const builder = Test.createTestingModule({
     imports: [AppModule],
     controllers: extraControllers,
   })
     .overrideModule(DatabaseModule)
-    .useModule(TestDatabaseModule)
-    .compile();
+    .useModule(TestDatabaseModule);
+  if (ratePolicy)
+    builder.overrideProvider(AUTH_RATE_POLICY).useValue(ratePolicy);
+  const moduleFixture = await builder.compile();
 
   const app = moduleFixture.createNestApplication<INestApplication<App>>();
   configureApp(app);

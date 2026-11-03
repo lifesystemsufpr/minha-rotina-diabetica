@@ -1,4 +1,8 @@
 import { Module } from '@nestjs/common';
+import { AuthRateBucket } from './entities/auth-rate-bucket.entity';
+import { AUTH_RATE_POLICY, authRatePolicy } from './auth-rate-policy';
+import { AuthRateLimitService } from './auth-rate-limit.service';
+import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule, JwtSignOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -17,7 +21,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     ConfigModule,
     UsersModule,
     PassportModule,
-    TypeOrmModule.forFeature([PasswordResetToken]),
+    TypeOrmModule.forFeature([PasswordResetToken, AuthRateBucket]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -35,9 +39,20 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   controllers: [AuthController],
   providers: [
     AuthService,
+    {
+      provide: AUTH_RATE_POLICY,
+      inject: [ConfigService],
+      useFactory: authRatePolicy,
+    },
+    AuthRateLimitService,
+    AuthRateLimitGuard,
     JwtStrategy,
     PasswordResetService,
-    { provide: PasswordResetMailer, inject: [ConfigService], useFactory: createPasswordResetMailer },
+    {
+      provide: PasswordResetMailer,
+      inject: [ConfigService],
+      useFactory: createPasswordResetMailer,
+    },
   ],
   exports: [AuthService],
 })

@@ -22,8 +22,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   // Só roda depois que assinatura e expiração foram validadas. O token de uma
   // conta excluída (soft delete) ou inexistente deixa de ser aceito aqui.
   async validate(payload: JwtPayload): Promise<AuthUser> {
+    if (
+      !payload ||
+      typeof payload.sub !== 'string' ||
+      !payload.sub ||
+      !Number.isSafeInteger(payload.ver) ||
+      payload.ver < 0
+    ) {
+      throw new UnauthorizedException();
+    }
     const user = await this.users.findById(payload.sub);
-    if (!user || !user.ativo) {
+    if (!user || !user.ativo || user.tokenVersion !== payload.ver) {
       throw new UnauthorizedException();
     }
     return { id: user.id };

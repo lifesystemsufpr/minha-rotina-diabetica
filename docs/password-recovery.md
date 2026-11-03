@@ -40,8 +40,8 @@ O prazo permanece em `PASSWORD_RESET_TOKEN_TTL_MINUTES`. Código expirado, usado
 - Nenhum e-mail real foi enviado durante o desenvolvimento. Testes capturam o transporte.
 - Homologar SMTP e entregabilidade com uma conta sintética autorizada, além de links em Android/iOS/web.
 - O envio é assíncrono, sem fila persistente ou retry automático. Reinício do processo pode interromper mensagens em andamento.
-- JWTs já emitidos em outros dispositivos continuam válidos até a expiração atual; este patch limpa apenas a sessão local. Revogação global e limitação de tentativas são trabalhos de segurança pendentes.
-- Não é necessário executar migrations para esta entrega.
+- A entrega de segurança posterior adiciona limitação persistente de tentativas e invalida os JWTs anteriores após redefinir a senha. Consulte [auth-security.md](auth-security.md) para a migration obrigatória e o procedimento de implantação.
+- A etapa SMTP isolada não exige migration nova. Ao incluir a etapa de segurança, executar a migration aditiva correspondente antes de iniciar a nova versão do backend.
 
 ## Testes
 
