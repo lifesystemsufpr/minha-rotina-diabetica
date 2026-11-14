@@ -89,6 +89,13 @@ funcionalidade deve usar o mesmo decorator.
 
 ## O que muda no app (GliCare)
 
+0. **Antes de tudo, trocar a Home para `GET /api/home/summary`.** Hoje a Home
+   do app monta o resumo chamando `/api/glycemias`,
+   `/api/insulin-applications` e `/api/reminders`, que respondem 403 enquanto
+   o perfil estiver incompleto. Sem essa troca, a Home quebra para quem acabou
+   de se cadastrar. O mesmo vale para o dashboard e os relatórios do app, que
+   também usam essas listas: com o perfil incompleto, mostrar o aviso no lugar
+   deles.
 1. Cadastro: só nome, e-mail, senha e confirmação. Os dados de saúde vão para
    uma tela de "Complete seu perfil".
 2. Depois do login, ler `user.perfilCompleto`. Se for `false`, mostrar só a
