@@ -37,7 +37,7 @@ Redefinir a senha atualiza o hash e incrementa `token_version` atomicamente, na 
 1. Configurar os limites no `.env` (ou manter os padrões) e fazer o backup habitual do banco.
 2. Em janela controlada, pausar as instâncias antigas e aplicar as migrations pelo fluxo do projeto: `npm.cmd run migration:run`. Não colocar a versão antiga em paralelo com a nova: ela não valida `ver`.
 3. A migration `1793664000000-AddAuthSecurity.ts` adiciona `token_version` com padrão zero e a tabela de contadores com índice de expiração. Ela não altera senhas ou registros clínicos existentes.
-4. Iniciar a nova versão, conferir política uniforme em todas as instâncias e avisar sobre o novo login obrigatório. `synchronize` continua desabilitado.
+4. Iniciar a nova versão, conferir política uniforme em todas as instâncias e **avisar quem usa o app antes**: todo mundo precisa entrar de novo depois deste deploy (decisão registrada em nov/2026). `synchronize` continua desabilitado.
 5. Homologar 429, SMTP, nova senha, tokens antigos e isolamento entre contas com dados sintéticos.
 
 **Nenhuma migration foi executada no MySQL durante o desenvolvimento desta entrega.** A migration foi exercitada em SQLite descartável. A execução e a concorrência no MySQL real ainda precisam de homologação.
