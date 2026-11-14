@@ -1,4 +1,11 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+  Res,
+  StreamableFile,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -6,6 +13,7 @@ import {
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
+  ApiProduces,
 } from '@nestjs/swagger';
 import { DateRangeQueryDto } from '../../common/dto/date-range-query.dto';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
@@ -13,6 +21,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ReportRecordDto } from './dto/report-record.dto';
 import { ReportsService } from './reports.service';
+import type { Response } from 'express';
 
 @ApiTags('reports')
 @ApiBearerAuth()
@@ -40,5 +49,43 @@ export class ReportsController {
     @Query() filtros: DateRangeQueryDto,
   ): Promise<ReportRecordDto[]> {
     return this.service.findRecords(userId, filtros);
+  }
+
+  @Get('pdf')
+  @ApiOperation({
+    summary: 'Gera o relatório em PDF (glicemias e insulina) do período',
+    description:
+      'Retorna o arquivo direto na resposta (application/pdf, attachment). ' +
+      'Sem registros no período, devolve um PDF válido com aviso de "nenhum registro".',
+  })
+  @ApiProduces('application/pdf')
+  @ApiOkResponse({
+    description: 'Arquivo PDF',
+    content: {
+      'application/pdf': { schema: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Período inválido (formato ou startDate posterior a endDate)',
+    type: ErrorResponseDto,
+  })
+  async generatePdf(
+    @CurrentUser('id') userId: string,
+    @Query() filtros: DateRangeQueryDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    // O PDF é gerado por inteiro antes de qualquer header: se falhar, o erro
+    // sai pelo filtro global no formato padrão da API (JSON), não como arquivo.
+    const { fileName, content } = await this.service.generatePdf(
+      userId,
+      filtros,
+    );
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${fileName}"`,
+      'Content-Length': String(content.length),
+      'Cache-Control': 'no-store', // dados de saúde: não guardar em cache
+    });
+    return new StreamableFile(content);
   }
 }

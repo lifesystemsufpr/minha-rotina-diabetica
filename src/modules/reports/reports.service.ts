@@ -3,6 +3,9 @@ import { DateRangeQueryDto } from '../../common/dto/date-range-query.dto';
 import { GlycemiaService } from '../glycemia/glycemia.service';
 import { InsulinService } from '../insulin/insulin.service';
 import { RecordType, ReportRecordDto } from './dto/report-record.dto';
+import { UsersService } from '../users/users.service';
+import { buildReportFileName } from './pdf/report-file-name';
+import { ReportPdfService } from './pdf/report-pdf.service';
 
 // Mais recente primeiro; empate no mesmo instante desempata por id, para a
 // ordem ser sempre a mesma (o mobile agrupa por dia a partir dessa lista).
@@ -16,6 +19,8 @@ export class ReportsService {
   constructor(
     private readonly glycemiaService: GlycemiaService,
     private readonly insulinService: InsulinService,
+    private readonly usersService: UsersService,
+    private readonly pdfService: ReportPdfService,
   ) {}
 
   // Consulta agregada: reaproveita os services de Glicemia e Insulina, que já
@@ -51,5 +56,28 @@ export class ReportsService {
     ];
 
     return registros.sort(porDataDesc);
+  }
+  // PDF do período. Os registros vêm de findRecords(userId, ...), que já
+  // filtra por dono e período, então o arquivo só tem dados deste usuário.
+  async generatePdf(
+    userId: string,
+    filtros: DateRangeQueryDto,
+  ): Promise<{ fileName: string; content: Buffer }> {
+    const records = await this.findRecords(userId, filtros);
+
+    // Identificação mínima: só o nome, para o médico saber de quem é o relatório.
+    const userName = (await this.usersService.findById(userId))?.nome;
+
+    const content = await this.pdfService.generate({
+      userName,
+      startDate: filtros.startDate,
+      endDate: filtros.endDate,
+      generatedAt: new Date(),
+      records,
+    });
+    return {
+      fileName: buildReportFileName(filtros.startDate, filtros.endDate),
+      content,
+    };
   }
 }

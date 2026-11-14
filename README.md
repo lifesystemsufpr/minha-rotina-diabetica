@@ -46,6 +46,7 @@ Segurança da autenticação: [limites de tentativas, revogação de JWTs e migr
 - Glicemias e aplicações de insulina (rotas, enums, datas e status): [`docs/glycemia-insulin.md`](docs/glycemia-insulin.md).
 - Lembretes (rotas e status): [`docs/reminders.md`](docs/reminders.md).
 - Filtro por período (`startDate`/`endDate`), validação e fuso horário: [`docs/date-range.md`](docs/date-range.md).
+- Relatório em PDF (download e compartilhamento no app): [`docs/reports.md`](docs/reports.md#relatório-em-pdf).
 - Relatórios: histórico consolidado de glicemias e insulina: [`docs/reports.md`](docs/reports.md).
 - Dashboard (média, maior, menor e séries para gráficos): [`docs/dashboard.md`](docs/dashboard.md).
 - CORS: sem `CORS_ORIGIN`, qualquer origem é aceita (desenvolvimento). Em produção, defina `CORS_ORIGIN` com as origens separadas por vírgula.
@@ -321,3 +322,11 @@ Token: uso único, expira em `PASSWORD_RESET_TOKEN_TTL_MINUTES` (padrão 30), gu
 Body: `{ "token": "<recebido por e-mail>", "novaSenha": "8 a 72 caracteres, com letras e números" }`
 200 → `{ "message": "Senha redefinida com sucesso." }`
 400 → payload inválido ou token inválido/expirado/já usado (mesma mensagem: "Token inválido ou expirado").
+
+### Autorização de rotas privadas
+
+- Toda rota fora de `/auth/*` precisa de `JwtAuthGuard`. O teste `test/authorization.e2e-spec.ts` lista as rotas registradas e **falha** se aparecer rota nova sem guard que não esteja na lista `ROTAS_PUBLICAS` do próprio teste.
+- O dono do registro vem sempre de `@CurrentUser('id')`, nunca de body, query ou param. Campos como `usuarioId` ou `userId` no payload são rejeitados com `400`.
+- Busque registros por `{ id, user: { id: userId } }`. Registro de outro usuário responde `404`, igual a um id inexistente, para não revelar que ele existe. O projeto não usa `403` nesse caso.
+- Respostas usam DTOs de saída explícitos (nunca a entidade), para não vazar senha/hash nem campos internos.
+- Detalhes dos códigos de erro: [`docs/errors.md`](docs/errors.md).

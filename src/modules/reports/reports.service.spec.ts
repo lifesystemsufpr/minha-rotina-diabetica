@@ -7,13 +7,16 @@ import { InsulinResponseDto } from '../insulin/dto/insulin-response.dto';
 import { InsulinService } from '../insulin/insulin.service';
 import { RecordType } from './dto/report-record.dto';
 import { ReportsService } from './reports.service';
+import { UsersService } from '../users/users.service';
+import { ReportPdfService } from './pdf/report-pdf.service';
 
 describe('ReportsService', () => {
   let service: ReportsService;
 
   const glycemiaService = { findAll: jest.fn() };
   const insulinService = { findAll: jest.fn() };
-
+  const usersService = { findById: jest.fn() };
+  const pdfService = { generate: jest.fn() };
   const glicemia = (id: string, dataHora: string): GlycemiaResponseDto => ({
     id,
     valor: 110,
@@ -40,6 +43,8 @@ describe('ReportsService', () => {
         ReportsService,
         { provide: GlycemiaService, useValue: glycemiaService },
         { provide: InsulinService, useValue: insulinService },
+        { provide: UsersService, useValue: usersService },
+        { provide: ReportPdfService, useValue: pdfService },
       ],
     }).compile();
 
@@ -115,5 +120,63 @@ describe('ReportsService', () => {
     insulinService.findAll.mockResolvedValue([]);
 
     expect(await service.findRecords('user-1', {})).toEqual([]);
+  });
+
+  describe('generatePdf', () => {
+    const filtros = { startDate: '2026-10-01', endDate: '2026-10-13' };
+
+    beforeEach(() => {
+      glycemiaService.findAll.mockResolvedValue([
+        glicemia('g1', '2026-10-12T11:30:00.000Z'),
+      ]);
+      insulinService.findAll.mockResolvedValue([]);
+      pdfService.generate.mockResolvedValue(Buffer.from('%PDF-fake'));
+      usersService.findById.mockResolvedValue({ nome: 'Maria Silva' });
+    });
+
+    it('busca só os dados do usuário, no período, e devolve nome previsível', async () => {
+      const result = await service.generatePdf('user-1', filtros);
+
+      expect(glycemiaService.findAll).toHaveBeenCalledWith('user-1', filtros);
+      expect(insulinService.findAll).toHaveBeenCalledWith('user-1', filtros);
+      expect(pdfService.generate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDate: '2026-10-01',
+          endDate: '2026-10-13',
+          records: [expect.objectContaining({ id: 'g1' })],
+        }),
+      );
+      expect(result.fileName).toBe(
+        'relatorio-rotina-diabetica_2026-10-01_a_2026-10-13.pdf',
+      );
+      expect(result.content.toString()).toBe('%PDF-fake');
+    });
+
+    it('inclui o nome do usuário no PDF', async () => {
+      await service.generatePdf('user-1', filtros);
+
+      expect(usersService.findById).toHaveBeenCalledWith('user-1');
+      expect(pdfService.generate).toHaveBeenCalledWith(
+        expect.objectContaining({ userName: 'Maria Silva' }),
+      );
+    });
+
+    it('gera PDF mesmo sem registros', async () => {
+      glycemiaService.findAll.mockResolvedValue([]);
+
+      await service.generatePdf('user-1', filtros);
+
+      expect(pdfService.generate).toHaveBeenCalledWith(
+        expect.objectContaining({ records: [] }),
+      );
+    });
+
+    it('propaga a falha do gerador (vira erro 500 no padrão da API)', async () => {
+      pdfService.generate.mockRejectedValue(new Error('falha'));
+
+      await expect(service.generatePdf('user-1', filtros)).rejects.toThrow(
+        'falha',
+      );
+    });
   });
 });

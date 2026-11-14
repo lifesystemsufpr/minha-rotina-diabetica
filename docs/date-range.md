@@ -5,6 +5,7 @@ recebem `DateRangeQueryDto` (`src/common/dto/date-range-query.dto.ts`):
 
 - `GET /api/glycemias`
 - `GET /api/insulin-applications`
+- `GET /api/reports/pdf`
 - `GET /api/reports/records`
 - `GET /api/dashboard`
 
