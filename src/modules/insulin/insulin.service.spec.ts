@@ -1,52 +1,49 @@
-
-import { DataSource } from 'typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Insulina } from './entities/insulina.entity';
 import { InsulinService } from './insulin.service';
 
 describe('InsulinService', () => {
   let service: InsulinService;
-  let query: jest.Mock;
+  const repo = {
+    findOne: jest.fn(),
+    save: jest.fn(),
+    create: jest.fn(),
+    find: jest.fn(),
+    remove: jest.fn(),
+  };
 
-  beforeEach(() => {
-    query = jest.fn();
-
-    service = new InsulinService({
-      query,
-    } as unknown as DataSource);
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        InsulinService,
+        { provide: getRepositoryToken(Insulina), useValue: repo },
+      ],
+    }).compile();
+    service = moduleRef.get(InsulinService);
   });
 
-  it('deve consultar uma aplicação própria', async () => { query.mockResolvedValue([{ id: '1', tipo: 'rapida' }]);
-
-    const resultado = await service.findOne('usuario-1', '1');
-
-    expect(resultado.id).toBe('1');
-    expect(query).toHaveBeenCalledWith(
-      expect.stringContaining('usuario_id = ?'), ['1', 'usuario-1']);
+  it('busca sempre por id + dono do token', async () => {
+    repo.findOne.mockResolvedValue({ id: 'i1', tipo: 'Rápida', doseUi: 10 });
+    await service.findOne('usuario-1', 'i1');
+    expect(repo.findOne).toHaveBeenCalledWith({
+      where: { id: 'i1', user: { id: 'usuario-1' } },
+    });
   });
 
-  it('deve retornar erro para ID inexistente', async () => { query.mockResolvedValue([]);
-
-    await expect(
-      service.findOne('usuario-1', '999'),
-    ).rejects.toThrow(NotFoundException);
-
+  it('id inexistente ou de outro usuário: 404', async () => {
+    repo.findOne.mockResolvedValue(null);
+    await expect(service.findOne('usuario-1', 'x')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
-  it('não deve editar aplicação de outro usuário', async () => {query.mockResolvedValue([]);
-
-    await expect(
-      service.update('usuario-1', '2', { doseUi: 10 }),
-    ).rejects.toThrow(NotFoundException);
-
-    expect(query).toHaveBeenCalledTimes(1);
-  });
-
-  it('não deve excluir aplicação de outro usuário', async () => {query.mockResolvedValue([]);
-
-    await expect(
-      service.remove('usuario-1', '2'),
-    ).rejects.toThrow(NotFoundException);
-
-    expect(query).toHaveBeenCalledTimes(1);
+  it('PATCH sem campos: 400', async () => {
+    await expect(service.update('usuario-1', 'i1', {})).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(repo.findOne).not.toHaveBeenCalled();
   });
 });
