@@ -35,33 +35,29 @@ export class ReportsService {
     ]);
 
     const registros: ReportRecordDto[] = [
-      ...glicemias.map(
-        (g): ReportRecordDto => ({
-          type: RecordType.GLYCEMIA,
-          id: g.id,
-          dateTime: g.dataHora,
-          glycemia: { valor: g.valor, momento: g.momento, status: g.status },
-          insulin: null,
-        }),
-      ),
-      ...insulinas.map(
-        (i): ReportRecordDto => ({
-          type: RecordType.INSULIN,
-          id: i.id,
-          dateTime: i.dataHora,
-          glycemia: null,
-          insulin: {
-            tipo: i.tipo,
-            doseUi: i.doseUi,
-            localAplicacao: i.localAplicacao,
-          },
-        }),
-      ),
+      ...glicemias.map((g): ReportRecordDto => ({
+        type: RecordType.GLYCEMIA,
+        id: g.id,
+        dateTime: g.dataHora,
+        glycemia: { valor: g.valor, momento: g.momento, status: g.status },
+        insulin: null,
+      })),
+      ...insulinas.map((i): ReportRecordDto => ({
+        type: RecordType.INSULIN,
+        id: i.id,
+        dateTime: i.dataHora,
+        glycemia: null,
+        insulin: {
+          tipo: i.tipo,
+          doseUi: i.doseUi,
+          localAplicacao: i.localAplicacao,
+        },
+      })),
     ];
 
     return registros.sort(porDataDesc);
   }
-    // PDF do período. Os registros vêm de findRecords(userId, ...), que já
+  // PDF do período. Os registros vêm de findRecords(userId, ...), que já
   // filtra por dono e período, então o arquivo só tem dados deste usuário.
   async generatePdf(
     userId: string,

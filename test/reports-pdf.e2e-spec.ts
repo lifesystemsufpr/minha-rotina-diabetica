@@ -6,16 +6,6 @@ import { ErrorResponseDto } from '../src/common/dto/error-response.dto';
 import { registerAndLogin } from './utils/auth-helpers';
 import { createTestApp } from './utils/create-test-app';
 
-// Lê o corpo como Buffer (o supertest não faz isso sozinho para PDF).
-const binary = (
-  res: NodeJS.ReadableStream,
-  done: (err: Error | null, body?: Buffer) => void,
-) => {
-  const chunks: Buffer[] = [];
-  res.on('data', (chunk: Buffer) => chunks.push(chunk));
-  res.on('end', () => done(null, Buffer.concat(chunks)));
-};
-
 describe('Relatório em PDF (e2e)', () => {
   let app: INestApplication<App>;
   let token: string;
@@ -24,7 +14,8 @@ describe('Relatório em PDF (e2e)', () => {
   const getPdf = (auth: string | undefined, query = '') => {
     const req = request(app.getHttpServer()).get(`/api/reports/pdf${query}`);
     if (auth) req.set('Authorization', `Bearer ${auth}`);
-    return req.buffer(true).parse(binary);
+    // 'blob' faz o supertest entregar o PDF como Buffer em res.body.
+    return req.responseType('blob');
   };
 
   beforeAll(async () => {

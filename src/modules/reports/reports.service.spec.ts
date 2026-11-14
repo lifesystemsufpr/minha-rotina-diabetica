@@ -122,7 +122,7 @@ describe('ReportsService', () => {
     expect(await service.findRecords('user-1', {})).toEqual([]);
   });
 
-    describe('generatePdf', () => {
+  describe('generatePdf', () => {
     const filtros = { startDate: '2026-10-01', endDate: '2026-10-13' };
 
     beforeEach(() => {
