@@ -88,10 +88,14 @@ describe('UsersService', () => {
 
   describe('updatePasswordHash', () => {
     it('atualiza só o usuário informado', async () => {
+      repo.update.mockResolvedValue({ affected: 1 });
       await service.updatePasswordHash('uuid-1', 'novo-hash');
       expect(repo.update).toHaveBeenCalledWith(
-        { id: 'uuid-1' },
-        { senhaHash: 'novo-hash' },
+        { id: 'uuid-1', ativo: true },
+        {
+          senhaHash: 'novo-hash',
+          tokenVersion: expect.any(Function) as () => string,
+        },
       );
     });
 
@@ -128,6 +132,7 @@ describe('UsersService', () => {
           email: true,
           senhaHash: true,
           ativo: true,
+          tokenVersion: true,
         },
       });
     });
