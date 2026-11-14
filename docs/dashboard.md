@@ -24,6 +24,17 @@ Para a tela mostrar "últimos 7 dias" ou "este mês", o app envia o período.
   ],
   "insulinaTotalDiaria": [
     { "data": "2026-10-05", "totalUi": 14.5 }
+  ],
+  "distribuicaoLeituras": {
+    "total": 3,
+    "muitoBaixa": { "quantidade": 0, "percentual": 0 },
+    "baixa": { "quantidade": 1, "percentual": 33.3 },
+    "noAlvo": { "quantidade": 1, "percentual": 33.3 },
+    "alta": { "quantidade": 1, "percentual": 33.3 },
+    "muitoAlta": { "quantidade": 0, "percentual": 0 }
+  },
+  "mediaPorMomento": [
+    { "momento": "JEJUM", "media": 100, "quantidade": 1 }
   ]
 }
 ```
@@ -34,6 +45,8 @@ Para a tela mostrar "últimos 7 dias" ou "este mês", o app envia o período.
 | `maiorValor` / `menorValor` | registro com o maior/menor valor, com data e momento. Empate: vale o mais recente |
 | `glicemiaAoLongoDoDia` | todas as glicemias do período, em ordem cronológica (pronto para gráfico de linha) |
 | `insulinaTotalDiaria` | soma das doses por dia, em ordem cronológica. Dias sem aplicação não aparecem |
+| `distribuicaoLeituras` | `{ total, muitoBaixa, baixa, noAlvo, alta, muitoAlta }`, cada faixa com `{ quantidade, percentual }`. Faixas do consenso de 2019: <54, 54–69, 70–180, 181–250 e >250 mg/dL. É percentual das **leituras**, não do tempo. Sem leituras, `percentual` é `null` |
+| `mediaPorMomento` | `[{ momento, media, quantidade }]`: média de cada momento do dia (perfil glicêmico), na ordem jejum → após jantar. Só aparecem momentos com leitura |
 
 O "dia" de `insulinaTotalDiaria.data` segue o fuso do processo da API, como no
 filtro por período ([`date-range.md`](date-range.md#fuso-horário)).
@@ -46,9 +59,7 @@ filtro por período ([`date-range.md`](date-range.md#fuso-horário)).
 No formato padrão ([`errors.md`](errors.md)): 400 para período inválido,
 401 sem token válido.
 
-## Pendente de validação
+## Validade clínica
 
-Se esses indicadores e gráficos fazem sentido clinicamente (por exemplo,
-média simples versus tempo no alvo, ou glicemia agrupada por momento em vez de
-série bruta) ainda precisa ser avaliado pela equipe. O cálculo atual segue
-exatamente o que a task pede.
+A revisão dos indicadores, com as referências e o que ainda depende de
+profissional de saúde, está em [`revisao-graficos.md`](revisao-graficos.md).

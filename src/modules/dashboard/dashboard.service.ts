@@ -4,6 +4,8 @@ import { GlycemiaService } from '../glycemia/glycemia.service';
 import { InsulinService } from '../insulin/insulin.service';
 import {
   calcularMedia,
+  calcularMediaPorMomento,
+  distribuirLeituras,
   encontrarMaior,
   encontrarMenor,
   montarSerieGlicemia,
@@ -34,6 +36,8 @@ export class DashboardService {
       menorValor: encontrarMenor(glicemias),
       glicemiaAoLongoDoDia: montarSerieGlicemia(glicemias),
       insulinaTotalDiaria: totalizarInsulinaPorDia(insulinas),
+      distribuicaoLeituras: distribuirLeituras(glicemias),
+      mediaPorMomento: calcularMediaPorMomento(glicemias),
     };
   }
 }

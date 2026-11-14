@@ -86,6 +86,19 @@ describe('Dashboard (e2e)', () => {
       { data: '2026-10-05', totalUi: 14.5 },
       { data: '2026-10-07', totalUi: 8 },
     ]);
+    expect(body.distribuicaoLeituras).toEqual({
+      total: 3,
+      muitoBaixa: { quantidade: 0, percentual: 0 },
+      baixa: { quantidade: 1, percentual: 33.3 },
+      noAlvo: { quantidade: 1, percentual: 33.3 },
+      alta: { quantidade: 1, percentual: 33.3 },
+      muitoAlta: { quantidade: 0, percentual: 0 },
+    });
+    expect(body.mediaPorMomento).toEqual([
+      { momento: 'JEJUM', media: 100, quantidade: 1 },
+      { momento: 'APOS_ALMOCO', media: 200, quantidade: 1 },
+      { momento: 'ANTES_JANTAR', media: 60, quantidade: 1 },
+    ]);
   });
 
   it('respeita o período', async () => {
@@ -113,6 +126,15 @@ describe('Dashboard (e2e)', () => {
       menorValor: null,
       glicemiaAoLongoDoDia: [],
       insulinaTotalDiaria: [],
+      distribuicaoLeituras: {
+        total: 0,
+        muitoBaixa: { quantidade: 0, percentual: null },
+        baixa: { quantidade: 0, percentual: null },
+        noAlvo: { quantidade: 0, percentual: null },
+        alta: { quantidade: 0, percentual: null },
+        muitoAlta: { quantidade: 0, percentual: null },
+      },
+      mediaPorMomento: [],
     });
   });
 

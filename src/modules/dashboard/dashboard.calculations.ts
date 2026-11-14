@@ -1,6 +1,10 @@
 import { GlycemiaResponseDto } from '../glycemia/dto/glycemia-response.dto';
 import { InsulinResponseDto } from '../insulin/dto/insulin-response.dto';
+import { MomentoGlicemia } from '../glycemia/enums/momento-glicemia.enum';
 import {
+  DistribuicaoLeiturasDto,
+  FaixaLeiturasDto,
+  MediaPorMomentoDto,
   PontoGlicemiaDto,
   TotalInsulinaDiarioDto,
 } from './dto/dashboard-response.dto';
@@ -81,4 +85,42 @@ export function totalizarInsulinaPorDia(
   return [...totais.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([data, total]) => ({ data, totalUi: arredondar(total) }));
+}
+
+// Limites do Consenso Internacional de Tempo no Alvo (Battelino et al.,
+// Diabetes Care 2019): <54, 54-69, 70-180, 181-250 e >250 mg/dL.
+export function distribuirLeituras(
+  glicemias: GlycemiaResponseDto[],
+): DistribuicaoLeiturasDto {
+  const total = glicemias.length;
+  const contar = (dentro: (valor: number) => boolean): FaixaLeiturasDto => {
+    const quantidade = glicemias.filter((g) => dentro(g.valor)).length;
+    return {
+      quantidade,
+      percentual:
+        total === 0 ? null : Math.round((quantidade / total) * 1000) / 10,
+    };
+  };
+  return {
+    total,
+    muitoBaixa: contar((v) => v < 54),
+    baixa: contar((v) => v >= 54 && v < 70),
+    noAlvo: contar((v) => v >= 70 && v <= 180),
+    alta: contar((v) => v > 180 && v <= 250),
+    muitoAlta: contar((v) => v > 250),
+  };
+}
+
+// Perfil glicêmico: média de cada momento do dia, na ordem do enum
+// (jejum, antes/após café, almoço e jantar), como no perfil de 7 pontos.
+export function calcularMediaPorMomento(
+  glicemias: GlycemiaResponseDto[],
+): MediaPorMomentoDto[] {
+  return Object.values(MomentoGlicemia).flatMap((momento) => {
+    const doMomento = glicemias.filter((g) => g.momento === momento);
+    const media = calcularMedia(doMomento);
+    return media === null
+      ? []
+      : [{ momento, media, quantidade: doMomento.length }];
+  });
 }

@@ -4,6 +4,8 @@ import { StatusGlicemia } from '../glycemia/enums/status-glicemia.enum';
 import { InsulinResponseDto } from '../insulin/dto/insulin-response.dto';
 import {
   calcularMedia,
+  calcularMediaPorMomento,
+  distribuirLeituras,
   encontrarMaior,
   encontrarMenor,
   montarSerieGlicemia,
@@ -150,5 +152,53 @@ describe('totalizarInsulinaPorDia', () => {
 
   it('retorna lista vazia sem registros', () => {
     expect(totalizarInsulinaPorDia([])).toEqual([]);
+  });
+});
+
+describe('distribuirLeituras (faixas do consenso de 2019)', () => {
+  const dia = new Date('2026-10-05T12:00:00Z');
+
+  it('separa nos limites 54, 70, 180 e 250 mg/dL', () => {
+    const valores = [40, 53.9, 54, 69, 70, 180, 180.5, 250, 251, 400];
+    const r = distribuirLeituras(valores.map((v) => glicemia(v, dia)));
+
+    expect(r.total).toBe(10);
+    expect(r.muitoBaixa).toEqual({ quantidade: 2, percentual: 20 });
+    expect(r.baixa).toEqual({ quantidade: 2, percentual: 20 });
+    expect(r.noAlvo).toEqual({ quantidade: 2, percentual: 20 });
+    expect(r.alta).toEqual({ quantidade: 2, percentual: 20 });
+    expect(r.muitoAlta).toEqual({ quantidade: 2, percentual: 20 });
+  });
+
+  it('percentual com 1 casa decimal', () => {
+    const r = distribuirLeituras([100, 100, 300].map((v) => glicemia(v, dia)));
+    expect(r.noAlvo.percentual).toBe(66.7);
+    expect(r.muitoAlta.percentual).toBe(33.3);
+  });
+
+  it('sem leituras: total 0 e percentuais null (sem divisão por zero)', () => {
+    const r = distribuirLeituras([]);
+    expect(r.total).toBe(0);
+    expect(r.noAlvo).toEqual({ quantidade: 0, percentual: null });
+  });
+});
+
+describe('calcularMediaPorMomento', () => {
+  const dia = new Date('2026-10-05T12:00:00Z');
+
+  it('média de cada momento, na ordem do dia, só com momentos que têm leitura', () => {
+    const r = calcularMediaPorMomento([
+      glicemia(200, dia, MomentoGlicemia.APOS_ALMOCO),
+      glicemia(100, dia, MomentoGlicemia.JEJUM),
+      glicemia(120, dia, MomentoGlicemia.JEJUM),
+    ]);
+    expect(r).toEqual([
+      { momento: MomentoGlicemia.JEJUM, media: 110, quantidade: 2 },
+      { momento: MomentoGlicemia.APOS_ALMOCO, media: 200, quantidade: 1 },
+    ]);
+  });
+
+  it('sem leituras: lista vazia', () => {
+    expect(calcularMediaPorMomento([])).toEqual([]);
   });
 });

@@ -62,6 +62,8 @@ describe('DashboardService', () => {
       menorValor: null,
       glicemiaAoLongoDoDia: [],
       insulinaTotalDiaria: [],
+      distribuicaoLeituras: expect.objectContaining({ total: 0 }) as unknown,
+      mediaPorMomento: [],
     });
   });
 });

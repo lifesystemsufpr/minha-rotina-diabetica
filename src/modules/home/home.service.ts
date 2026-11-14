@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThanOrEqual, Repository } from 'typeorm';
+import {
+  And,
+  FindOperator,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { dateRangeWhere } from '../../common/utils/date-range';
 import { toGlycemiaResponse } from '../glycemia/dto/glycemia-response.dto';
 import { Glicemia } from '../glycemia/entities/glicemia.entity';
@@ -41,6 +47,11 @@ export class HomeService {
     const hoje = diaLocal(agora);
     const seisDiasAtras = new Date(agora);
     seisDiasAtras.setDate(seisDiasAtras.getDate() - 6);
+    // Registros com data futura (a API aceita) não contam como "último",
+    // "registrado hoje" nem entram no gráfico até a hora chegar.
+    const jaAconteceu = LessThanOrEqual(agora);
+    const ateAgora = (desde: string): FindOperator<Date> =>
+      And(dateRangeWhere(desde) as FindOperator<Date>, jaAconteceu);
 
     const [
       usuario,
@@ -53,11 +64,11 @@ export class HomeService {
     ] = await Promise.all([
       this.users.findById(userId),
       this.glicemias.findOne({
-        where: doUsuario,
+        where: { ...doUsuario, dataHora: jaAconteceu },
         order: { dataHora: 'DESC', id: 'ASC' },
       }),
       this.insulinas.findOne({
-        where: doUsuario,
+        where: { ...doUsuario, dataHora: jaAconteceu },
         order: { dataHora: 'DESC', id: 'ASC' },
       }),
       this.lembretes.findOne({
@@ -69,15 +80,15 @@ export class HomeService {
         order: { dataHora: 'ASC', id: 'ASC' },
       }),
       this.glicemias.exists({
-        where: { ...doUsuario, dataHora: dateRangeWhere(hoje, hoje) },
+        where: { ...doUsuario, dataHora: ateAgora(hoje) },
       }),
       this.insulinas.exists({
-        where: { ...doUsuario, dataHora: dateRangeWhere(hoje, hoje) },
+        where: { ...doUsuario, dataHora: ateAgora(hoje) },
       }),
       this.glicemias.find({
         where: {
           ...doUsuario,
-          dataHora: dateRangeWhere(diaLocal(seisDiasAtras), hoje),
+          dataHora: ateAgora(diaLocal(seisDiasAtras)),
         },
         order: { dataHora: 'ASC', id: 'ASC' },
       }),

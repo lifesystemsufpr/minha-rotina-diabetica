@@ -37,14 +37,16 @@ export class HomeSummaryResponseDto {
   @ApiProperty({
     type: GlycemiaResponseDto,
     nullable: true,
-    description: 'Glicemia mais recente. null se não houver.',
+    description:
+      'Glicemia mais recente até agora (data futura não conta). null se não houver.',
   })
   ultimaGlicemia!: GlycemiaResponseDto | null;
 
   @ApiProperty({
     type: InsulinResponseDto,
     nullable: true,
-    description: 'Aplicação de insulina mais recente. null se não houver.',
+    description:
+      'Aplicação de insulina mais recente até agora (data futura não conta). null se não houver.',
   })
   ultimaInsulina!: InsulinResponseDto | null;
 
