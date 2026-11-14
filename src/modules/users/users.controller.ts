@@ -54,6 +54,11 @@ export class UsersController {
   @HttpCode(204)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Excluir a própria conta',
+    description:
+      'Desativa a conta do usuário autenticado (LGPD). Liberada mesmo com o perfil incompleto. Depois disso, o token deixa de valer (401).',
+  })
   @ApiNoContentResponse({
     description:
       'Conta marcada como inativa (soft delete). Dados de glicemia, insulina, lembretes e perfil permanecem no banco, associados ao usuário inativo.',
