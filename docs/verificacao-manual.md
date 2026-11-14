@@ -101,7 +101,7 @@ Os commits citados estão na `development`. Para ver um deles:
 | Cadastro em duas etapas, bloqueio por perfil incompleto e fim do contato de emergência | `331bbdc` (#45) | Ver o roteiro abaixo |
 | Resumo da rota de exclusão de conta no Swagger | `35337d6` (#46) | `DELETE /api/users/me` tem título no Swagger |
 | Home não conta registros com data futura | `70afd86` (#46) | Cadastre uma glicemia para daqui a 1 hora: `GET /api/home/summary` continua mostrando a anterior como última |
-| Descrição da exclusão de conta no Swagger (dizia que os dados ficavam no banco, o que deixou de ser verdade em 19/10); roteiro de backup; este documento | PR desta mudança | `DELETE /api/users/me` no Swagger descreve o apagamento. [`deploy-backup.md`](deploy-backup.md) |
+| Descrição da exclusão de conta no Swagger (dizia que os dados ficavam no banco, o que deixou de ser verdade em 19/10); roteiro de backup; este documento | #47 | `DELETE /api/users/me` no Swagger descreve o apagamento. [`deploy-backup.md`](deploy-backup.md) |
 
 ## Merges que resolveram conflitos
 
