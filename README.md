@@ -49,7 +49,7 @@ Segurança da autenticação: [limites de tentativas, revogação de JWTs e migr
 - Filtro por período (`startDate`/`endDate`), validação e fuso horário: [`docs/date-range.md`](docs/date-range.md).
 - Relatório em PDF (download e compartilhamento no app): [`docs/reports.md`](docs/reports.md#relatório-em-pdf).
 - Relatórios: histórico consolidado de glicemias e insulina: [`docs/reports.md`](docs/reports.md).
-- Dashboard (média, maior, menor e séries para gráficos): [`docs/dashboard.md`](docs/dashboard.md).
+- Dashboard (média, faixas, perfil por momento e séries para gráficos): [`docs/dashboard.md`](docs/dashboard.md). Revisão clínica dos indicadores: [`docs/revisao-graficos.md`](docs/revisao-graficos.md).
 - CORS: sem `CORS_ORIGIN`, qualquer origem é aceita (desenvolvimento). Em produção, defina `CORS_ORIGIN` com as origens separadas por vírgula.
 
 ## Fluxo de trabalho (PRs e CI)
