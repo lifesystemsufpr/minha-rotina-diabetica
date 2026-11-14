@@ -1,40 +1,50 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsNumber, IsOptional, IsPositive, IsString, MaxLength,} from 'class-validator';
-import { ApplicationSite, InsulinType } from '../enums/insulin.enums';
-
+import { Transform } from 'class-transformer';
+import {
+  IsDateString,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  Max,
+  MaxLength,
+} from 'class-validator';
+import { trim } from '../../../common/transformers/string.transformers';
+import { LocalAplicacao } from '../enums/local-aplicacao.enum';
 
 export class CreateInsulinDto {
+  // A lista de tipos ainda não foi fechada (task "[BACK][INSULINA] Criar
+  // entidade e DTOs"): texto livre até existir um conjunto aprovado.
+  @ApiProperty({ example: 'Rápida', maxLength: 50 })
+  @Transform(trim)
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  tipo!: string;
 
-  // ---------- tipo da insulina ----------
-  @ApiProperty({ enum: InsulinType, example: InsulinType.RAPIDA })
-  @IsEnum(InsulinType, { message: 'tipo deve ser basal, rapida ou mista' })
-  tipo!: InsulinType;
-
-  // ---------- dose ----------
-  @ApiProperty({ description: 'Dose em UI (maior que zero)', example: 10 })
-  @IsNumber({}, { message: 'doseUi deve ser um número' })
-  @IsPositive({ message: 'doseUi deve ser maior que zero' })
+  // decimal(6,2) no banco: até 9999,99
+  @ApiProperty({ example: 10, description: 'Dose em UI (maior que zero)' })
+  @IsNumber({ allowNaN: false, allowInfinity: false, maxDecimalPlaces: 2 })
+  @IsPositive()
+  @Max(9999.99)
   doseUi!: number;
 
-  // ---------- local da aplicação ----------
-  @ApiProperty({ enum: ApplicationSite, example: ApplicationSite.ABDOMEN })
-  @IsEnum(ApplicationSite, {
-    message: 'localAplicacao deve ser abdomen, braco, coxa ou outro',
-  })
-  localAplicacao!: ApplicationSite;
+  @ApiProperty({ enum: LocalAplicacao, example: LocalAplicacao.ABDOMEN })
+  @IsEnum(LocalAplicacao)
+  localAplicacao!: LocalAplicacao;
 
-  // ---------- data e hora ----------
   @ApiProperty({
-    description: 'Data e hora da aplicação',
-    example: '12-10-2026T08:30:00.000Z',
+    example: '2026-10-12T08:30:00-03:00',
+    description: 'Data e hora da aplicação em ISO 8601',
   })
-  @IsDateString({}, { message: 'dataHora deve ser uma data válida' })
+  @IsDateString({ strict: true })
   dataHora!: string;
 
-  // ---------- observação (opcional) ----------
-  @ApiPropertyOptional({ example: 'Antes do almoço' })
+  @ApiPropertyOptional({ example: 'Antes do almoço', maxLength: 255 })
   @IsOptional()
-  @IsString({ message: 'observacao deve ser um texto' })
-  @MaxLength(255, { message: 'observacao deve ter no máximo 255 caracteres' })
+  @IsString()
+  @MaxLength(255)
   observacao?: string;
 }
