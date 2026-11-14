@@ -6,6 +6,7 @@ recebem `DateRangeQueryDto` (`src/common/dto/date-range-query.dto.ts`):
 - `GET /api/glycemias`
 - `GET /api/insulin-applications`
 - `GET /api/reports/records`
+- `GET /api/dashboard`
 
 Rotas novas que filtram por período devem usar o mesmo DTO, sem criar outra
 interpretação de datas.

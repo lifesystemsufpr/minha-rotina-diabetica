@@ -47,6 +47,7 @@ Segurança da autenticação: [limites de tentativas, revogação de JWTs e migr
 - Lembretes (rotas e status): [`docs/reminders.md`](docs/reminders.md).
 - Filtro por período (`startDate`/`endDate`), validação e fuso horário: [`docs/date-range.md`](docs/date-range.md).
 - Relatórios: histórico consolidado de glicemias e insulina: [`docs/reports.md`](docs/reports.md).
+- Dashboard (média, maior, menor e séries para gráficos): [`docs/dashboard.md`](docs/dashboard.md).
 - CORS: sem `CORS_ORIGIN`, qualquer origem é aceita (desenvolvimento). Em produção, defina `CORS_ORIGIN` com as origens separadas por vírgula.
 
 ## Documentação da API (Swagger)
