@@ -75,10 +75,22 @@ funcionalidade deve usar o mesmo decorator.
 
 ## Contato de emergência
 
-- As colunas `contato_emergencia_*` de `perfis` são apagadas pela migration
-  `1794614400000-RemoveContatoEmergencia`. **Os dados apagados não voltam**
-  com o `migration:revert` (ele recria as colunas vazias). Faça backup antes
-  de rodar em banco com dados reais.
+- **A remoção das colunas no banco está adiada até confirmação.** As colunas
+  `contato_emergencia_*` de `perfis` continuam no banco, com os dados que já
+  existem, mas a API não lê, não grava e não devolve esses campos. A API funciona
+  igual com ou sem as colunas: o cadastro, o perfil, os registros e a exclusão
+  de conta foram testados assim no MariaDB.
+- A migration que apaga as colunas (`RemoveContatoEmergencia`) saiu da
+  `development` para nenhum `migration:run` rodá-la por engano. Quando a remoção
+  for confirmada, ela volta num PR próprio, recuperada do histórico:
+
+  ```bash
+  git show 331bbdc:src/database/migrations/1794614400000-RemoveContatoEmergencia.ts > src/database/migrations/1794614400000-RemoveContatoEmergencia.ts
+  ```
+
+  Os dados apagados por ela **não voltam** com o `migration:revert`, que recria
+  as colunas vazias. Antes de rodá-la em banco com dados reais, siga
+  [`deploy-backup.md`](deploy-backup.md).
 - **Transição:** versões do app que ainda enviam `contatoEmergencia` no
   cadastro ou no `PATCH /api/profile` continuam funcionando. O campo é aceito e
   **ignorado** (não é validado, gravado nem devolvido). Quando o app parar de
