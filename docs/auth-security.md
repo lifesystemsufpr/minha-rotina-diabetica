@@ -34,7 +34,7 @@ Redefinir a senha atualiza o hash e incrementa `token_version` atomicamente, na 
 
 ## Implantação e migration
 
-1. Revisar o patch `11-seguranca-autenticacao-backend.patch`, configurar limites e realizar o backup habitual do banco.
+1. Configurar os limites no `.env` (ou manter os padrões) e fazer o backup habitual do banco.
 2. Em janela controlada, pausar as instâncias antigas e aplicar as migrations pelo fluxo do projeto: `npm.cmd run migration:run`. Não colocar a versão antiga em paralelo com a nova: ela não valida `ver`.
 3. A migration `1793664000000-AddAuthSecurity.ts` adiciona `token_version` com padrão zero e a tabela de contadores com índice de expiração. Ela não altera senhas ou registros clínicos existentes.
 4. Iniciar a nova versão, conferir política uniforme em todas as instâncias e avisar sobre o novo login obrigatório. `synchronize` continua desabilitado.
