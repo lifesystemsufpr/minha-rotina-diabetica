@@ -148,11 +148,6 @@ describe('UsersService', () => {
         tipoDiabetes: TipoDiabetes.TIPO_1,
         alturaCm: 170.5,
         pesoKg: 68.3,
-        contatoEmergencia: {
-          nome: 'João Silva',
-          relacao: 'Pai',
-          telefone: '(41) 99999-9999',
-        },
       },
     };
     const savedPerfil = {
@@ -160,9 +155,6 @@ describe('UsersService', () => {
       tipoDiabetes: TipoDiabetes.TIPO_1,
       alturaCm: 170.5,
       pesoKg: 68.3,
-      contatoEmergenciaNome: 'João Silva',
-      contatoEmergenciaRelacao: 'Pai',
-      contatoEmergenciaTelefone: '(41) 99999-9999',
     } as Perfil;
 
     it('cria Usuario e Perfil na mesma transação e NÃO devolve senhaHash', async () => {
@@ -187,13 +179,10 @@ describe('UsersService', () => {
           tipoDiabetes: TipoDiabetes.TIPO_1,
           alturaCm: 170.5,
           pesoKg: 68.3,
-          contatoEmergenciaNome: 'João Silva',
-          contatoEmergenciaRelacao: 'Pai',
-          contatoEmergenciaTelefone: '(41) 99999-9999',
         }),
       );
       expect(result.email).toBe('maria@example.com');
-      expect(result.perfil?.contatoEmergencia.nome).toBe('João Silva');
+      expect(result.perfilCompleto).toBe(true);
       expect(JSON.stringify(result)).not.toContain('hash-secreto');
       expect(result).not.toHaveProperty('senhaHash');
     });
@@ -235,6 +224,7 @@ describe('UsersService', () => {
         'email',
         'id',
         'nome',
+        'perfilCompleto',
       ]);
     });
 

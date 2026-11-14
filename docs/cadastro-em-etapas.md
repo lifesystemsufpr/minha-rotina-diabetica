@@ -1,0 +1,107 @@
+# Cadastro em duas etapas e perfil completo
+
+Mudança de produto de nov/2026 (pedida pelo PM a partir dos testes de
+integração com o app):
+
+- o cadastro era um formulário único e grande;
+- agora a pessoa cria a conta só com o básico e completa os dados de saúde
+  depois;
+- até completar, o app mostra só a Home;
+- o **contato de emergência saiu** do produto. Só tinha entrado por estar no
+  DCU e não tinha uso no app.
+
+## Fluxo
+
+```text
+1. POST /api/auth/register   { nome, email, senha, confirmarSenha? }
+                             → 201, perfilCompleto: false
+2. POST /api/auth/login      → 200, user.perfilCompleto: false
+3. App: perfilCompleto false → tela "Complete seu perfil" + só a Home
+4. PATCH /api/profile        { dataNascimento, tipoDiabetes, alturaCm, pesoKg }
+                             → 200, perfilCompleto: true
+5. Todas as funcionalidades liberadas
+```
+
+O PATCH pode ser feito aos poucos (um campo por vez). O perfil só fica completo
+quando os **quatro** campos estiverem preenchidos.
+
+## O que é "perfil completo"
+
+`dataNascimento`, `tipoDiabetes`, `alturaCm` e `pesoKg` preenchidos. A regra
+está num lugar só: `src/modules/users/utils/perfil-completo.ts`.
+
+O campo `perfilCompleto` aparece em:
+
+| Rota | Onde |
+| --- | --- |
+| `POST /api/auth/register` | raiz da resposta |
+| `POST /api/auth/login` | `user.perfilCompleto` |
+| `GET /api/users/me` | raiz da resposta |
+| `GET /api/profile` e `PATCH /api/profile` | raiz da resposta |
+
+## O que fica bloqueado
+
+Com o perfil incompleto, estas rotas respondem **403**:
+
+- `/api/glycemias/**`
+- `/api/insulin-applications/**`
+- `/api/reminders/**`
+- `/api/reports/**`
+- `/api/dashboard`
+
+```json
+{
+  "statusCode": 403,
+  "error": "Forbidden",
+  "code": "PERFIL_INCOMPLETO",
+  "message": "Complete seu perfil (data de nascimento, tipo de diabetes, altura e peso) para usar esta funcionalidade.",
+  "timestamp": "2026-11-14T12:00:00.000Z",
+  "path": "/api/glycemias",
+  "method": "GET"
+}
+```
+
+O app deve decidir pelo `code`, não pelo texto da `message`. Sem token, a
+resposta continua sendo 401 (o token é conferido antes do perfil).
+
+Continuam liberadas: `/api/auth/**`, `/api/profile`, `/api/home/summary` e
+`/api/users/me` (inclusive `DELETE`, para a exclusão de conta da LGPD
+funcionar a qualquer momento).
+
+**Como funciona:** os controllers das funcionalidades usam
+`@ExigePerfilCompleto()` (`src/modules/profile/guards/perfil-completo.guard.ts`),
+que aplica o `JwtAuthGuard` e depois o `PerfilCompletoGuard`. Rota nova de
+funcionalidade deve usar o mesmo decorator.
+
+## Contato de emergência
+
+- As colunas `contato_emergencia_*` de `perfis` são apagadas pela migration
+  `1794614400000-RemoveContatoEmergencia`. **Os dados apagados não voltam**
+  com o `migration:revert` (ele recria as colunas vazias). Faça backup antes
+  de rodar em banco com dados reais.
+- **Transição:** versões do app que ainda enviam `contatoEmergencia` no
+  cadastro ou no `PATCH /api/profile` continuam funcionando. O campo é aceito e
+  **ignorado** (não é validado, gravado nem devolvido). Quando o app parar de
+  enviar, apague `ContatoEmergenciaDescontinuado`
+  (`src/modules/profile/dto/contato-emergencia-descontinuado.decorator.ts`) e o
+  campo dos DTOs.
+- As respostas **não têm mais** `contatoEmergencia`.
+
+## O que muda no app (GliCare)
+
+1. Cadastro: só nome, e-mail, senha e confirmação. Os dados de saúde vão para
+   uma tela de "Complete seu perfil".
+2. Depois do login, ler `user.perfilCompleto`. Se for `false`, mostrar só a
+   Home e um aviso/atalho para completar o perfil.
+3. Tratar `403` com `code: "PERFIL_INCOMPLETO"` em qualquer rota levando para
+   essa tela (por exemplo, se o perfil foi editado em outro aparelho).
+4. Remover os campos de contato de emergência do cadastro e do perfil.
+
+## Testes
+
+- `test/cadastro-em-etapas.e2e-spec.ts`: o fluxo completo (cadastro básico,
+  403 em todas as rotas bloqueadas, Home e perfil liberados, perfil parcial
+  ainda bloqueado, liberação depois do PATCH, login com `perfilCompleto`).
+- `src/modules/users/utils/perfil-completo.spec.ts`: a regra de completude.
+- `test/auth-register.e2e-spec.ts` e `test/profile.e2e-spec.ts`:
+  `contatoEmergencia` aceito e ignorado.

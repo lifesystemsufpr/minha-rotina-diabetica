@@ -1,31 +1,30 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsEmail,
-  IsEnum,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   Matches,
-  Max,
   MaxLength,
-  Min,
   MinLength,
-  ValidateNested,
 } from 'class-validator';
-import { IsNotFutureDate } from '../../../common/decorators/is-not-future-date.decorator';
 import { MatchesProperty } from '../../../common/decorators/matches-property.decorator';
 import {
   raw,
-  toNumber,
   trim,
   trimLowercase,
 } from '../../../common/transformers/string.transformers';
-import { TipoDiabetes } from '../../users/enums/tipo-diabetes.enum';
+import { ContatoEmergenciaDescontinuado } from '../../profile/dto/contato-emergencia-descontinuado.decorator';
+import { ProfileFieldsDto } from '../../profile/dto/profile-fields.dto';
 import { PASSWORD_PATTERN, PASSWORD_PATTERN_MESSAGE } from '../password-policy';
-import { ContatoEmergenciaDto } from './contato-emergencia.dto';
-export class RegisterDto {
+// Cadastro em duas etapas (nov/2026):
+// 1. POST /auth/register só exige nome, e-mail e senha.
+// 2. PATCH /profile completa os dados de saúde. Até lá, a conta só acessa
+//    Home, perfil e conta (as outras rotas respondem 403 PERFIL_INCOMPLETO).
+// Os dados de saúde ainda podem vir no cadastro (opcionais, mesmas regras do
+// PATCH /profile): se vierem os quatro, o perfil já nasce completo.
+export class RegisterDto extends PartialType(ProfileFieldsDto) {
   @ApiProperty()
   @Transform(trim)
   @IsString()
@@ -60,33 +59,6 @@ export class RegisterDto {
   })
   confirmarSenha?: string;
 
-  @ApiProperty({
-    example: '1995-04-12',
-    description: 'AAAA-MM-DD; não pode ser futura',
-  })
-  @IsNotFutureDate()
-  dataNascimento!: string;
-
-  @ApiProperty({ enum: TipoDiabetes, example: TipoDiabetes.TIPO_1 })
-  @IsEnum(TipoDiabetes)
-  tipoDiabetes!: TipoDiabetes;
-
-  @ApiProperty({ example: 170.5, description: 'Em centímetros (30 a 272)' })
-  @Transform(toNumber)
-  @IsNumber({ allowNaN: false, allowInfinity: false, maxDecimalPlaces: 2 })
-  @Min(30)
-  @Max(272)
-  alturaCm!: number;
-
-  @ApiProperty({ example: 68.3, description: 'Em quilos (1 a 500)' })
-  @Transform(toNumber)
-  @IsNumber({ allowNaN: false, allowInfinity: false, maxDecimalPlaces: 2 })
-  @Min(1)
-  @Max(500)
-  pesoKg!: number;
-
-  @ApiProperty({ type: ContatoEmergenciaDto })
-  @ValidateNested()
-  @Type(() => ContatoEmergenciaDto)
-  contatoEmergencia!: ContatoEmergenciaDto;
+  @ContatoEmergenciaDescontinuado()
+  contatoEmergencia?: unknown;
 }

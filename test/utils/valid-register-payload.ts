@@ -7,11 +7,6 @@ export function validRegisterPayload(overrides: Record<string, unknown> = {}) {
     tipoDiabetes: 'TIPO_1',
     alturaCm: 170.5,
     pesoKg: 68.3,
-    contatoEmergencia: {
-      nome: 'João Silva',
-      relacao: 'Pai',
-      telefone: '(41) 99999-9999',
-    },
     ...overrides,
   };
 }

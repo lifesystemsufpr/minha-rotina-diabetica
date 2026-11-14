@@ -13,6 +13,7 @@ Todos os erros da API saem no mesmo formato, montado pelo filtro global
 | `timestamp` | string | Data e hora em ISO 8601 |
 | `path` | string | Caminho da requisição, **sem** query string |
 | `method` | string | Método HTTP |
+| `code` | string | Só em alguns erros de negócio: código estável para o app decidir o que fazer (ex.: `PERFIL_INCOMPLETO`). Use o `code`, nunca o texto da `message` |
 | `details` | `{ field, messages[] }[]` | Só em erros de validação: um item por campo inválido |
 
 ## Exemplos
@@ -71,4 +72,5 @@ converte todas para o formato acima; não monte respostas de erro à mão.
 | E-mail duplicado no cadastro | `EmailAlreadyExistsException` | 409 |
 | Login ou token inválido | `InvalidCredentialsException` | 401 |
 | Sem permissão | `InsufficientPermissionsException` | 403 |
+| Perfil incompleto (cadastro em duas etapas) | `PerfilIncompletoException` (`code: PERFIL_INCOMPLETO`) | 403 |
 | Usuário não encontrado | `UserNotFoundException` | 404 |

@@ -26,12 +26,13 @@ export class AuthService {
       nome: dto.nome,
       email: dto.email,
       senhaHash,
+      // Dados de saúde são opcionais no cadastro (2ª etapa: PATCH /profile).
+      // contatoEmergencia é descontinuado e ignorado de propósito.
       perfil: {
         dataNascimento: dto.dataNascimento,
         tipoDiabetes: dto.tipoDiabetes,
         alturaCm: dto.alturaCm,
         pesoKg: dto.pesoKg,
-        contatoEmergencia: dto.contatoEmergencia,
       },
     });
   }
@@ -46,7 +47,12 @@ export class AuthService {
 
     return {
       accessToken: this.signAccessToken(String(user.id), user.tokenVersion),
-      user: { id: user.id, nome: user.nome, email: user.email },
+      user: {
+        id: user.id,
+        nome: user.nome,
+        email: user.email,
+        perfilCompleto: await this.users.isPerfilCompleto(user.id),
+      },
     };
   }
 

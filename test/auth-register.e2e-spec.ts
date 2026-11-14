@@ -32,16 +32,12 @@ describe('POST /auth/register (e2e)', () => {
 
     expect(body.id).toEqual(expect.any(String));
     expect(body.email).toBe('maria@example.com');
+    expect(body.perfilCompleto).toBe(true);
     expect(body.perfil).toEqual({
       dataNascimento: '1995-04-12',
       tipoDiabetes: 'TIPO_1',
       alturaCm: 170.5,
       pesoKg: 68.3,
-      contatoEmergencia: {
-        nome: 'João Silva',
-        relacao: 'Pai',
-        telefone: '(41) 99999-9999',
-      },
     });
     const json = JSON.stringify(body);
     expect(json).not.toContain('senha');
@@ -65,7 +61,37 @@ describe('POST /auth/register (e2e)', () => {
     });
     expect(perfil.alturaCm).toBe(170.5);
     expect(perfil.pesoKg).toBe(68.3);
-    expect(perfil.contatoEmergenciaTelefone).toBe('(41) 99999-9999');
+  });
+
+  it('1ª etapa: só nome, e-mail e senha cria a conta com perfil incompleto', async () => {
+    const res = await post({
+      nome: 'Só Básico',
+      email: 'basico@example.com',
+      senha: 'senha-forte-123',
+    }).expect(201);
+    const body = res.body as Record<string, any>;
+
+    expect(body.perfilCompleto).toBe(false);
+    expect(body.perfil).toEqual({
+      dataNascimento: null,
+      tipoDiabetes: null,
+      alturaCm: null,
+      pesoKg: null,
+    });
+  });
+
+  it('contatoEmergencia (descontinuado) é aceito e ignorado', async () => {
+    const res = await post(
+      validRegisterPayload({
+        email: 'contato-legado@example.com',
+        contatoEmergencia: {
+          nome: 'João Silva',
+          relacao: 'Pai',
+          telefone: '(41) 99999-9999',
+        },
+      }),
+    ).expect(201);
+    expect(JSON.stringify(res.body)).not.toContain('João Silva');
   });
 
   it('normaliza o e-mail (maiúsculas e espaços)', async () => {
@@ -137,22 +163,6 @@ describe('POST /auth/register (e2e)', () => {
       ['altura acima do limite da coluna', { alturaCm: 1000 }, 'alturaCm'],
       ['peso com 3 casas decimais', { pesoKg: 68.123 }, 'pesoKg'],
       ['peso zero', { pesoKg: 0 }, 'pesoKg'],
-      [
-        'contato sem telefone',
-        { contatoEmergencia: { nome: 'A', relacao: 'B' } },
-        'contatoEmergencia.telefone',
-      ],
-      [
-        'telefone com letras',
-        {
-          contatoEmergencia: {
-            nome: 'A',
-            relacao: 'B',
-            telefone: 'abc-defg-hij',
-          },
-        },
-        'contatoEmergencia.telefone',
-      ],
     ];
 
     it.each(cases)('%s', async (_name, override, field) => {
@@ -183,17 +193,6 @@ describe('POST /auth/register (e2e)', () => {
           validRegisterPayload({ email: 'extra@example.com', ...extra }),
         ).expect(400);
       }
-      await post(
-        validRegisterPayload({
-          email: 'extra@example.com',
-          contatoEmergencia: {
-            nome: 'A',
-            relacao: 'B',
-            telefone: '41999999999',
-            admin: 1,
-          },
-        }),
-      ).expect(400);
     });
 
     it('nenhum cadastro inválido deixa usuário gravado', async () => {

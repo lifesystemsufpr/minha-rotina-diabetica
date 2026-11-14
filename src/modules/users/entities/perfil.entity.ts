@@ -21,7 +21,7 @@ export class Perfil {
     type: 'date',
     nullable: true,
   })
-  dataNascimento: string;
+  dataNascimento: string | null;
 
   @Column({
     name: 'tipo_diabetes',
@@ -29,7 +29,7 @@ export class Perfil {
     enum: TipoDiabetes,
     nullable: true,
   })
-  tipoDiabetes: TipoDiabetes;
+  tipoDiabetes: TipoDiabetes | null;
 
   @Column({
     name: 'altura_cm',
@@ -39,7 +39,7 @@ export class Perfil {
     nullable: true,
     transformer: columnNumericTransformer,
   })
-  alturaCm: number;
+  alturaCm: number | null;
 
   @Column({
     name: 'peso_kg',
@@ -49,31 +49,7 @@ export class Perfil {
     nullable: true,
     transformer: columnNumericTransformer,
   })
-  pesoKg: number;
-
-  @Column({
-    name: 'contato_emergencia_nome',
-    type: 'varchar',
-    length: 100,
-    nullable: true,
-  })
-  contatoEmergenciaNome: string;
-
-  @Column({
-    name: 'contato_emergencia_relacao',
-    type: 'varchar',
-    length: 50,
-    nullable: true,
-  })
-  contatoEmergenciaRelacao: string;
-
-  @Column({
-    name: 'contato_emergencia_telefone',
-    type: 'varchar',
-    length: 20,
-    nullable: true,
-  })
-  contatoEmergenciaTelefone: string;
+  pesoKg: number | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

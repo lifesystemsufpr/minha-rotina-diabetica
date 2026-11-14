@@ -60,11 +60,8 @@ describe('Profile (e2e)', () => {
     expect(body.alturaCm).toBe(170.5);
     expect(body.pesoKg).toBe(68.3);
     expect(body.tipoDiabetes).toBe('TIPO_1');
-    expect(body.contatoEmergencia).toEqual({
-      nome: 'João Silva',
-      relacao: 'Pai',
-      telefone: '(41) 99999-9999',
-    });
+    expect(body.perfilCompleto).toBe(true);
+    expect(body).not.toHaveProperty('contatoEmergencia');
     expect(JSON.stringify(body)).not.toMatch(/senha|hash/i);
   });
 
@@ -83,32 +80,15 @@ describe('Profile (e2e)', () => {
       .body as ProfileResponseDto;
     expect(body.pesoKg).toBe(60);
     expect(body.alturaCm).toBe(170.5);
-    expect(body.contatoEmergencia?.nome).toBe('João Silva');
   });
 
-  it('PATCH atualiza o contato de emergência completo', async () => {
-    await patch(tokenA, {
-      contatoEmergencia: {
-        nome: 'Carla Souza',
-        relacao: 'Mãe',
-        telefone: '(11) 98888-7777',
-      },
-    }).expect(200);
-
-    const body = (await get(tokenA).expect(200)).body as ProfileResponseDto;
-    expect(body.contatoEmergencia).toEqual({
-      nome: 'Carla Souza',
-      relacao: 'Mãe',
-      telefone: '(11) 98888-7777',
-    });
-  });
-
-  it('PATCH recusa contato de emergência incompleto', async () => {
-    const res = await patch(tokenA, {
-      contatoEmergencia: { nome: 'Só nome' },
-    }).expect(400);
-    const fields = (res.body as ErrorResponseDto).details?.map((d) => d.field);
-    expect(fields).toContain('contatoEmergencia.relacao');
+  it('PATCH aceita e ignora contatoEmergencia (descontinuado)', async () => {
+    const body = (
+      await patch(tokenA, {
+        contatoEmergencia: { nome: 'Carla Souza', relacao: 'Mãe' },
+      }).expect(200)
+    ).body as ProfileResponseDto;
+    expect(JSON.stringify(body)).not.toContain('Carla');
   });
 
   it('PATCH com dado inválido retorna 400 com details', async () => {

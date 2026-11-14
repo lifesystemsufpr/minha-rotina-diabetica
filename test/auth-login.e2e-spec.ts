@@ -38,7 +38,12 @@ describe('POST /auth/login (e2e)', () => {
 
     expect(body.accessToken).toEqual(expect.any(String));
     expect(Object.keys(body).sort()).toEqual(['accessToken', 'user']);
-    expect(Object.keys(body.user).sort()).toEqual(['email', 'id', 'nome']);
+    expect(Object.keys(body.user).sort()).toEqual([
+      'email',
+      'id',
+      'nome',
+      'perfilCompleto',
+    ]);
     expect(JSON.stringify(body)).not.toContain('$2b$');
     expect(JSON.stringify(body)).not.toContain('senha');
   });
