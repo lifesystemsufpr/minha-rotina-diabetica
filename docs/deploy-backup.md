@@ -4,6 +4,10 @@ Roteiro para publicar uma versão que tem migration, com volta garantida se
 algo der errado. Ele foi ensaiado em nov/2026 no MariaDB 10.4, com a migration
 `RemoveContatoEmergencia`: backup, deploy, restauração e conferência dos dados.
 
+A migration do ensaio está fora da `development` até a confirmação (#48). O
+roteiro vale para ela e para qualquer outra migration que apague ou altere
+dados.
+
 Quem roda é quem tem acesso ao servidor do banco. O repositório não guarda
 endereço nem senha de produção, e eles não devem ir para o Git.
 

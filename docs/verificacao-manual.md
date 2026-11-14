@@ -99,6 +99,7 @@ Os commits citados estão na `development`. Para ver um deles:
 | Faixas de leitura e média por momento no dashboard; revisão clínica | `e682788` (#46) | Leituras de 50, 65, 100, 200 e 300: `distribuicaoLeituras` dá 1 leitura (20%) em cada faixa. [`revisao-graficos.md`](revisao-graficos.md) |
 | README: merge com CI verde é combinado do time (a branch não tem bloqueio) | `95d33dd` (#46) | Seção "Fluxo de trabalho" do README |
 | Cadastro em duas etapas, bloqueio por perfil incompleto e fim do contato de emergência | `331bbdc` (#45) | Ver o roteiro abaixo |
+| A migration que apaga as colunas de contato saiu da `development` até a confirmação. A API funciona igual com as colunas no banco | #48 | `npm run migration:show` lista 4 migrations. Um contato já gravado continua no banco depois de `migration:run` |
 | Resumo da rota de exclusão de conta no Swagger | `35337d6` (#46) | `DELETE /api/users/me` tem título no Swagger |
 | Home não conta registros com data futura | `70afd86` (#46) | Cadastre uma glicemia para daqui a 1 hora: `GET /api/home/summary` continua mostrando a anterior como última |
 | Descrição da exclusão de conta no Swagger (dizia que os dados ficavam no banco, o que deixou de ser verdade em 19/10); roteiro de backup; este documento | #47 | `DELETE /api/users/me` no Swagger descreve o apagamento. [`deploy-backup.md`](deploy-backup.md) |
@@ -140,8 +141,9 @@ Cadastro com data de nascimento de amanhã, feito depois das 21h, responde 400.
    traz `perfilCompleto: true`, e `GET /api/glycemias` passa a dar 200.
 6. Envie `contatoEmergencia` no cadastro ou no `PATCH /api/profile`: é aceito
    e ignorado, e não aparece em nenhuma resposta.
-7. No banco: `SHOW COLUMNS FROM perfis LIKE 'contato%'` não retorna nada
-   depois de `npm run migration:run`.
+7. No banco, as colunas `contato_emergencia_*` **continuam**: a remoção está
+   adiada até confirmação (#48). Os contatos já gravados ficam intactos, e
+   `npm run migration:show` não lista a `RemoveContatoEmergencia`.
 
 Mais detalhes em [`cadastro-em-etapas.md`](cadastro-em-etapas.md).
 
@@ -161,7 +163,10 @@ API no ar, pare o banco e chame `GET /api/profile`.
 ## Backup e rollback
 
 Ensaio do roteiro de [`deploy-backup.md`](deploy-backup.md) num banco local de
-teste:
+teste. A migration usada, `RemoveContatoEmergencia`, está fora da `development`
+até a confirmação (#48). Para repetir o ensaio, traga o arquivo com o comando de
+[`cadastro-em-etapas.md`](cadastro-em-etapas.md#contato-de-emergência), sem
+fazer commit dele.
 
 1. Crie um banco vazio, rode `npm run migration:run` e depois
    `npm run migration:revert`. O banco fica como na produção antes do #45.
