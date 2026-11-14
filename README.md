@@ -51,6 +51,8 @@ Segurança da autenticação: [limites de tentativas, revogação de JWTs e migr
 - Relatório em PDF (download e compartilhamento no app): [`docs/reports.md`](docs/reports.md#relatório-em-pdf).
 - Relatórios: histórico consolidado de glicemias e insulina: [`docs/reports.md`](docs/reports.md).
 - Dashboard (média, faixas, perfil por momento e séries para gráficos): [`docs/dashboard.md`](docs/dashboard.md). Revisão clínica dos indicadores: [`docs/revisao-graficos.md`](docs/revisao-graficos.md).
+- Deploy com migration: backup do banco e rollback em [`docs/deploy-backup.md`](docs/deploy-backup.md).
+- Mudanças da revisão técnica e como conferir cada uma à mão: [`docs/verificacao-manual.md`](docs/verificacao-manual.md).
 - CORS: sem `CORS_ORIGIN`, qualquer origem é aceita (desenvolvimento). Em produção, defina `CORS_ORIGIN` com as origens separadas por vírgula.
 
 ## Fluxo de trabalho (PRs e CI)
