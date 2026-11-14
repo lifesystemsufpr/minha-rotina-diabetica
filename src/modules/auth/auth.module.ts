@@ -1,4 +1,8 @@
 import { Module } from '@nestjs/common';
+import { AuthRateBucket } from './entities/auth-rate-bucket.entity';
+import { AUTH_RATE_POLICY, authRatePolicy } from './auth-rate-policy';
+import { AuthRateLimitService } from './auth-rate-limit.service';
+import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule, JwtSignOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -7,7 +11,7 @@ import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
-import { LoggerPasswordResetMailer } from './mail/logger-password-reset-mailer';
+import { createPasswordResetMailer } from './mail/smtp-password-reset-mailer';
 import { PasswordResetMailer } from './mail/password-reset-mailer';
 import { PasswordResetService } from './password-reset.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -17,7 +21,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     ConfigModule,
     UsersModule,
     PassportModule,
-    TypeOrmModule.forFeature([PasswordResetToken]),
+    TypeOrmModule.forFeature([PasswordResetToken, AuthRateBucket]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -35,10 +39,20 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   controllers: [AuthController],
   providers: [
     AuthService,
+    {
+      provide: AUTH_RATE_POLICY,
+      inject: [ConfigService],
+      useFactory: authRatePolicy,
+    },
+    AuthRateLimitService,
+    AuthRateLimitGuard,
     JwtStrategy,
     PasswordResetService,
-    // Troque useClass pela implementação real de e-mail quando existir.
-    { provide: PasswordResetMailer, useClass: LoggerPasswordResetMailer },
+    {
+      provide: PasswordResetMailer,
+      inject: [ConfigService],
+      useFactory: createPasswordResetMailer,
+    },
   ],
   exports: [AuthService],
 })

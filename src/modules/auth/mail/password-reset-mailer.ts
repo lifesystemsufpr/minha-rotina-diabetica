@@ -7,9 +7,8 @@ export interface PasswordResetMailData {
 }
 
 // Contrato do envio de e-mail de recuperação. É uma classe abstrata para
-// servir de token de injeção do Nest. O provedor real (SES, SendGrid, SMTP...)
-// fica para outra task: basta criar uma implementação e trocar o `useClass`
-// em AuthModule.
+// servir de token de injeção do Nest. O AuthModule seleciona SMTP configurável
+// ou o modo desabilitado de desenvolvimento/testes.
 export abstract class PasswordResetMailer {
   abstract sendPasswordReset(data: PasswordResetMailData): Promise<void>;
 }

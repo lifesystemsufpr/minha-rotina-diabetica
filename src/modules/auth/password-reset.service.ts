@@ -59,10 +59,9 @@ export class PasswordResetService {
     // Falha de envio é só logada (a resposta ao cliente continua genérica).
     void this.mailer
       .sendPasswordReset({ to: user.email, nome: user.nome, token, expiresAt })
-      .catch((err: unknown) =>
+      .catch(() =>
         this.logger.error(
-          'Falha ao enviar e-mail de recuperação',
-          err instanceof Error ? err.stack : String(err),
+          'Falha ao enviar e-mail de recuperação. Verifique a configuração e a disponibilidade do SMTP.',
         ),
       );
   }
