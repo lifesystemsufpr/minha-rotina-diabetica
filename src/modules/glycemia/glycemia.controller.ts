@@ -1,93 +1,125 @@
 import {
   Body,
   Controller,
-  Post,
-  Req,
-  UseGuards,
-  Get,
-  Query,
-  Param,
-  Patch,
   Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
-  ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { ErrorResponseDto } from '../../common/dto/error-response.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateGlycemiaDto } from './dto/create-glycemia.dto';
-import { GlycemiaService } from './glycemia.service';
+import { GlycemiaResponseDto } from './dto/glycemia-response.dto';
 import { ListGlycemiaDto } from './dto/list-glycemia.dto';
 import { UpdateGlycemiaDto } from './dto/update-glycemia.dto';
+import { GlycemiaService } from './glycemia.service';
 
 @ApiTags('glycemias')
-@ApiBearerAuth('JWT-auth')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiUnauthorizedResponse({
+  description: 'Token ausente, inválido, expirado ou de conta excluída',
+  type: ErrorResponseDto,
+})
 @Controller('glycemias')
 export class GlycemiaController {
   constructor(private readonly service: GlycemiaService) {}
 
   @Post()
   @ApiOperation({ summary: 'Registrar uma medição de glicemia' })
-  @ApiResponse({ status: 201, description: 'Medição criada' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 401, description: 'Token ausente ou inválido' })
-  create(@Req() req: { user: { id: string } }, @Body() dto: CreateGlycemiaDto) {
-    return this.service.create(req.user.id, dto);
+  @ApiCreatedResponse({ type: GlycemiaResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Valor, momento ou data inválidos',
+    type: ErrorResponseDto,
+  })
+  create(
+    @CurrentUser('id') userId: string,
+    @Body() dto: CreateGlycemiaDto,
+  ): Promise<GlycemiaResponseDto> {
+    return this.service.create(userId, dto);
   }
-  //-------------------------------LISTAR------------------------------------------
 
   @Get()
-  @ApiResponse({ status: 200, description: 'Lista de glicemias' })
-  @ApiResponse({ status: 400, description: 'Filtro inválido' })
-  @ApiResponse({ status: 401, description: 'Token ausente ou inválido' })
+  @ApiOperation({
+    summary: 'Listar as glicemias do usuário (mais recente primeiro)',
+  })
+  @ApiOkResponse({ type: [GlycemiaResponseDto] })
+  @ApiBadRequestResponse({
+    description: 'Filtro inválido',
+    type: ErrorResponseDto,
+  })
   findAll(
-    @Req() req: { user: { id: string } },
+    @CurrentUser('id') userId: string,
     @Query() filtros: ListGlycemiaDto,
-  ) {
-    return this.service.findAll(req.user.id, filtros);
+  ): Promise<GlycemiaResponseDto[]> {
+    return this.service.findAll(userId, filtros);
   }
-
-  //-----------------------------------------------------------------------------------
 
   @Get(':id')
   @ApiOperation({ summary: 'Consultar glicemia por ID' })
-  @ApiResponse({ status: 200, description: 'Glicemia encontrada' })
-  @ApiResponse({ status: 401, description: 'Token inválido ou ausente' })
-  @ApiResponse({ status: 404, description: 'Glicemia não encontrada' })
-  findOne(@Req() req: { user: { id: string } }, @Param('id') id: string) {
-    return this.service.findOne(req.user.id, id);
+  @ApiOkResponse({ type: GlycemiaResponseDto })
+  @ApiNotFoundResponse({
+    description: 'Não encontrada (ou de outro usuário)',
+    type: ErrorResponseDto,
+  })
+  findOne(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<GlycemiaResponseDto> {
+    return this.service.findOne(userId, id);
   }
-
-  //----------------------------------------------------------------------------------
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Editar glicemia por ID' })
-  @ApiResponse({ status: 200, description: 'Glicemia atualizada' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 401, description: 'Token inválido ou ausente' })
-  @ApiResponse({ status: 404, description: 'Glicemia não encontrada' })
+  @ApiOperation({
+    summary: 'Editar glicemia por ID (o status é recalculado)',
+  })
+  @ApiOkResponse({ type: GlycemiaResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Dados inválidos',
+    type: ErrorResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Não encontrada (ou de outro usuário)',
+    type: ErrorResponseDto,
+  })
   update(
-    @Req() req: { user: { id: string } },
-    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateGlycemiaDto,
-  ) {
-    return this.service.update(req.user.id, id, dto);
+  ): Promise<GlycemiaResponseDto> {
+    return this.service.update(userId, id, dto);
   }
-
-  //--------------------------------------------------------------------------------------
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Excluir glicemia por ID' })
-  @ApiResponse({ status: 204, description: 'Glicemia excluída' })
-  @ApiResponse({ status: 401, description: 'Token inválido ou ausente' })
-  @ApiResponse({ status: 404, description: 'Glicemia não encontrada' })
-  remove(@Req() req: { user: { id: string } }, @Param('id') id: string) {
-    return this.service.remove(req.user.id, id);
+  @ApiNoContentResponse({ description: 'Glicemia excluída' })
+  @ApiNotFoundResponse({
+    description: 'Não encontrada (ou de outro usuário)',
+    type: ErrorResponseDto,
+  })
+  remove(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    return this.service.remove(userId, id);
   }
 }
