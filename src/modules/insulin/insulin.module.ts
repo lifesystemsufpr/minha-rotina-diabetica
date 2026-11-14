@@ -8,5 +8,6 @@ import { InsulinService } from './insulin.service';
   imports: [TypeOrmModule.forFeature([Insulina])],
   controllers: [InsulinController],
   providers: [InsulinService],
+  exports: [InsulinService],
 })
 export class InsulinModule {}
