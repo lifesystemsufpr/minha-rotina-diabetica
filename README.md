@@ -46,7 +46,8 @@ Segurança da autenticação: [limites de tentativas, revogação de JWTs e migr
 - Glicemias e aplicações de insulina (rotas, enums, datas e status): [`docs/glycemia-insulin.md`](docs/glycemia-insulin.md).
 - Lembretes (rotas e status): [`docs/reminders.md`](docs/reminders.md).
 - Filtro por período (`startDate`/`endDate`), validação e fuso horário: [`docs/date-range.md`](docs/date-range.md).
-- Relatórios: histórico consolidado e PDF de glicemias e insulina: [`docs/reports.md`](docs/reports.md).
+- Relatório em PDF (download e compartilhamento no app): [`docs/reports.md`](docs/reports.md#relatório-em-pdf).
+- Relatórios: histórico consolidado de glicemias e insulina: [`docs/reports.md`](docs/reports.md).
 - CORS: sem `CORS_ORIGIN`, qualquer origem é aceita (desenvolvimento). Em produção, defina `CORS_ORIGIN` com as origens separadas por vírgula.
 
 ## Documentação da API (Swagger)
