@@ -174,6 +174,36 @@ describe('Home (e2e)', () => {
     expect(body.glicemiaUltimos7Dias).toHaveLength(1);
   });
 
+  it('registros com data futura não contam como último, de hoje nem no gráfico', async () => {
+    const { token } = await registerAndLogin(app, 'futuro@home.local', 'Lia');
+    const minutos = (m: number) =>
+      new Date(Date.now() + m * 60_000).toISOString();
+    await post(token, 'glycemias', {
+      valor: 120,
+      momento: 'JEJUM',
+      dataHora: minutos(-2),
+    });
+    await post(token, 'glycemias', {
+      valor: 333,
+      momento: 'JEJUM',
+      dataHora: minutos(5),
+    });
+    await post(token, 'insulin-applications', {
+      tipo: 'Basal',
+      doseUi: 10,
+      localAplicacao: 'COXA',
+      dataHora: minutos(5),
+    });
+
+    const body = (await summary(token).expect(200))
+      .body as HomeSummaryResponseDto;
+
+    expect(body.ultimaGlicemia?.valor).toBe(120);
+    expect(body.ultimaInsulina).toBeNull();
+    expect(body.resumoDiario.insulinaRegistrada).toBe(false);
+    expect(body.glicemiaUltimos7Dias.map((p) => p.valor)).toEqual([120]);
+  });
+
   it('ignora qualquer tentativa de escolher o usuário pela URL', async () => {
     const body = (
       await http()
