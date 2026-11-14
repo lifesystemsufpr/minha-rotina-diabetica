@@ -222,29 +222,45 @@ describe('Autorização das rotas privadas (e2e)', () => {
     it('token malformado', () => get('Bearer token.invalido.aqui').expect(401));
 
     it('token expirado', async () => {
-      const expirado = jwt().sign({ sub: userIdA }, { expiresIn: '-10s' });
+      const expirado = jwt().sign(
+        { sub: userIdA, ver: 0 },
+        { expiresIn: '-10s' },
+      );
       await get(bearer(expirado)).expect(401);
     });
 
     it('token assinado com outro segredo', async () => {
-      const falso = jwt().sign({ sub: userIdA }, { secret: 'outro-segredo' });
+      const falso = jwt().sign(
+        { sub: userIdA, ver: 0 },
+        { secret: 'outro-segredo' },
+      );
       await get(bearer(falso)).expect(401);
     });
 
     it('token sem assinatura (alg none)', async () => {
       const b64 = (o: object) =>
         Buffer.from(JSON.stringify(o)).toString('base64url');
-      const semAssinatura = `${b64({ alg: 'none', typ: 'JWT' })}.${b64({ sub: userIdA })}.`;
+      const semAssinatura = `${b64({ alg: 'none', typ: 'JWT' })}.${b64({ sub: userIdA, ver: 0 })}.`;
       await get(bearer(semAssinatura)).expect(401);
     });
 
     it('token válido de usuário que não existe', async () => {
-      const orfao = jwt().sign({ sub: UUID });
+      const orfao = jwt().sign({ sub: UUID, ver: 0 });
       await get(bearer(orfao)).expect(401);
     });
 
+    it('token sem o campo ver (emitido antes da revogação de sessões)', async () => {
+      const legado = jwt().sign({ sub: userIdA });
+      await get(bearer(legado)).expect(401);
+    });
+
+    it('controle: o mesmo token com ver correto é aceito', async () => {
+      const valido = jwt().sign({ sub: userIdA, ver: 0 });
+      await get(bearer(valido)).expect(200);
+    });
+
     it('token sem o campo sub', async () => {
-      const semSub = jwt().sign({ foo: 'bar' });
+      const semSub = jwt().sign({ foo: 'bar', ver: 0 });
       await get(bearer(semSub)).expect(401);
     });
   });
