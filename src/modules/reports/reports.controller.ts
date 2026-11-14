@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-  UseGuards,
-  Res,
-  StreamableFile,
-} from '@nestjs/common';
+import { Controller, Get, Query, Res, StreamableFile } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -18,14 +11,14 @@ import {
 import { DateRangeQueryDto } from '../../common/dto/date-range-query.dto';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ExigePerfilCompleto } from '../profile/guards/perfil-completo.guard';
 import { ReportRecordDto } from './dto/report-record.dto';
 import { ReportsService } from './reports.service';
 import type { Response } from 'express';
 
 @ApiTags('reports')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@ExigePerfilCompleto()
 @ApiUnauthorizedResponse({
   description: 'Token ausente, inválido, expirado ou de conta excluída',
   type: ErrorResponseDto,

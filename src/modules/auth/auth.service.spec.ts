@@ -9,7 +9,11 @@ import { RegisterDto } from './dto/register.dto';
 
 describe('AuthService', () => {
   let service: AuthService;
-  const users = { create: jest.fn(), findByEmailWithPassword: jest.fn() };
+  const users = {
+    create: jest.fn(),
+    findByEmailWithPassword: jest.fn(),
+    isPerfilCompleto: jest.fn(),
+  };
   const jwt = { sign: jest.fn().mockReturnValue('token-jwt') };
 
   beforeEach(async () => {
@@ -34,11 +38,8 @@ describe('AuthService', () => {
       tipoDiabetes: TipoDiabetes.TIPO_2,
       alturaCm: 170.5,
       pesoKg: 68.3,
-      contatoEmergencia: {
-        nome: 'João',
-        relacao: 'Pai',
-        telefone: '41999999999',
-      },
+      // Descontinuado: aceito pelo DTO, mas não pode chegar ao UsersService.
+      contatoEmergencia: { nome: 'João', relacao: 'Pai', telefone: '419' },
     };
 
     it('repassa só o hash (nunca a senha nem confirmarSenha) ao UsersService', async () => {
@@ -58,7 +59,6 @@ describe('AuthService', () => {
         tipoDiabetes: TipoDiabetes.TIPO_2,
         alturaCm: 170.5,
         pesoKg: 68.3,
-        contatoEmergencia: dto.contatoEmergencia,
       });
     });
   });
@@ -79,12 +79,18 @@ describe('AuthService', () => {
         ativo: true,
         tokenVersion: 0,
       });
+      users.isPerfilCompleto.mockResolvedValue(false);
       const result = await service.login({ email: 'maria@example.com', senha });
 
       expect(jwt.sign).toHaveBeenCalledWith({ sub: 'uuid-1', ver: 0 });
       expect(result).toEqual({
         accessToken: 'token-jwt',
-        user: { id: 'uuid-1', nome: 'Maria', email: 'maria@example.com' },
+        user: {
+          id: 'uuid-1',
+          nome: 'Maria',
+          email: 'maria@example.com',
+          perfilCompleto: false,
+        },
       });
       expect(JSON.stringify(result)).not.toContain(senhaHash);
     });

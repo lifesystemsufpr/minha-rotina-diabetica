@@ -21,6 +21,9 @@ export class FieldErrorDto {
  * O mobile deve sempre ler:
  *  - `message` -> texto principal para exibir ao usuário
  *  - `details` -> lista de erros por campo, quando existir (validação)
+ *  - `code`    -> código estável para o app decidir o que fazer, quando
+ *                 existir (ex.: PERFIL_INCOMPLETO). Não mude o texto de
+ *                 `message` para tomar decisão no app; use o `code`.
  */
 export class ErrorResponseDto {
   @ApiProperty({ example: 400, description: 'Código HTTP do erro' })
@@ -50,6 +53,12 @@ export class ErrorResponseDto {
 
   @ApiProperty({ example: 'POST' })
   method!: string;
+
+  @ApiPropertyOptional({
+    example: 'PERFIL_INCOMPLETO',
+    description: 'Código estável do erro de negócio, quando houver',
+  })
+  code?: string;
 
   @ApiPropertyOptional({ type: [FieldErrorDto] })
   details?: FieldErrorDto[];

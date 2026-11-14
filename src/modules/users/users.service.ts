@@ -12,6 +12,7 @@ import {
 } from 'typeorm';
 import { EmailAlreadyExistsException } from '../../common/exceptions';
 import { toUserResponse, UserResponseDto } from './dto/user-response.dto';
+import { isPerfilCompleto } from './utils/perfil-completo';
 import { User } from './entities/user.entity';
 import { Perfil } from './entities/perfil.entity';
 import { Glicemia } from '../glycemia/entities/glicemia.entity';
@@ -23,12 +24,13 @@ import { TipoDiabetes } from './enums/tipo-diabetes.enum';
 // NÃO é o CreateUserDto da API: a senha já chega como hash (quem faz o hash
 // é o AuthService), então texto puro de senha nunca passa por este módulo.
 
+// Dados de saúde opcionais: o cadastro é em duas etapas e o perfil pode
+// nascer vazio (completado depois em PATCH /profile).
 export interface CreatePerfilData {
-  dataNascimento: string;
-  tipoDiabetes: TipoDiabetes;
-  alturaCm: number;
-  pesoKg: number;
-  contatoEmergencia: { nome: string; relacao: string; telefone: string };
+  dataNascimento?: string;
+  tipoDiabetes?: TipoDiabetes;
+  alturaCm?: number;
+  pesoKg?: number;
 }
 
 export interface CreateUserData {
@@ -69,6 +71,16 @@ export class UsersService {
     // filtro e devolve o PRIMEIRO usuário da tabela.
     if (!id) return null;
     return this.usersRepository.findOne({ where: { id } });
+  }
+
+  // Perfil completo = os quatro dados de saúde preenchidos. Usado no login e
+  // pelo PerfilCompletoGuard.
+  async isPerfilCompleto(usuarioId: string): Promise<boolean> {
+    if (!usuarioId) return false;
+    const perfil = await this.dataSource.getRepository(Perfil).findOne({
+      where: { user: { id: usuarioId } },
+    });
+    return isPerfilCompleto(perfil);
   }
 
   // Usuário + perfil para GET /users/me. Não traz senhaHash.
@@ -145,13 +157,10 @@ export class UsersService {
         user.perfil = await manager.save(
           manager.create(Perfil, {
             user,
-            dataNascimento: perfil.dataNascimento,
-            tipoDiabetes: perfil.tipoDiabetes,
-            alturaCm: perfil.alturaCm,
-            pesoKg: perfil.pesoKg,
-            contatoEmergenciaNome: perfil.contatoEmergencia.nome,
-            contatoEmergenciaRelacao: perfil.contatoEmergencia.relacao,
-            contatoEmergenciaTelefone: perfil.contatoEmergencia.telefone,
+            dataNascimento: perfil.dataNascimento ?? null,
+            tipoDiabetes: perfil.tipoDiabetes ?? null,
+            alturaCm: perfil.alturaCm ?? null,
+            pesoKg: perfil.pesoKg ?? null,
           }),
         );
         return user;

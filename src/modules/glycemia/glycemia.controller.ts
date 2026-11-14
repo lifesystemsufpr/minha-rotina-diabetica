@@ -10,7 +10,6 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -25,7 +24,7 @@ import {
 } from '@nestjs/swagger';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ExigePerfilCompleto } from '../profile/guards/perfil-completo.guard';
 import { CreateGlycemiaDto } from './dto/create-glycemia.dto';
 import { GlycemiaResponseDto } from './dto/glycemia-response.dto';
 import { ListGlycemiaDto } from './dto/list-glycemia.dto';
@@ -34,7 +33,7 @@ import { GlycemiaService } from './glycemia.service';
 
 @ApiTags('glycemias')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@ExigePerfilCompleto()
 @ApiUnauthorizedResponse({
   description: 'Token ausente, inválido, expirado ou de conta excluída',
   type: ErrorResponseDto,

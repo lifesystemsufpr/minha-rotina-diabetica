@@ -49,3 +49,18 @@ export class InsufficientPermissionsException extends ForbiddenException {
     });
   }
 }
+
+// Conta sem os dados de saúde (2ª etapa do cadastro). O app usa o `code` para
+// levar a pessoa à tela de completar o perfil.
+export const PERFIL_INCOMPLETO = 'PERFIL_INCOMPLETO';
+
+export class PerfilIncompletoException extends ForbiddenException {
+  constructor() {
+    super({
+      error: 'Forbidden',
+      code: PERFIL_INCOMPLETO,
+      message:
+        'Complete seu perfil (data de nascimento, tipo de diabetes, altura e peso) para usar esta funcionalidade.',
+    });
+  }
+}

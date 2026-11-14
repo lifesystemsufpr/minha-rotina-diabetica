@@ -44,7 +44,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const { statusCode, error, message, details } =
+    const { statusCode, error, message, code, details } =
       this.resolveExceptionInfo(exception);
 
     // Nunca vazar stack trace, mensagens de erro de SQL/driver ou qualquer
@@ -61,6 +61,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: this.getSafePath(request),
       method: request.method,
+      ...(code ? { code } : {}),
       ...(details ? { details } : {}),
     };
 
@@ -71,6 +72,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     statusCode: number;
     error: string;
     message: string;
+    code?: string;
     details?: FieldErrorDto[];
   } {
     // Caso 1: qualquer HttpException do Nest (as nativas: BadRequestException,
@@ -110,7 +112,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
           ? (body.details as FieldErrorDto[])
           : undefined;
 
-        return { statusCode, error, message, details };
+        const code = typeof body.code === 'string' ? body.code : undefined;
+
+        return { statusCode, error, message, code, details };
       }
 
       return {

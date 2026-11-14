@@ -44,6 +44,7 @@ Segurança da autenticação: [limites de tentativas, revogação de JWTs e migr
 - Recuperação de senha, SMTP e links do mobile: [`docs/password-recovery.md`](docs/password-recovery.md).
 - Exclusão de conta (LGPD) e seus efeitos: [`docs/account-deletion.md`](docs/account-deletion.md).
 - Glicemias e aplicações de insulina (rotas, enums, datas e status): [`docs/glycemia-insulin.md`](docs/glycemia-insulin.md).
+- Cadastro em duas etapas e bloqueio por perfil incompleto (`403 PERFIL_INCOMPLETO`): [`docs/cadastro-em-etapas.md`](docs/cadastro-em-etapas.md).
 - Home (resumo da tela inicial em uma chamada): [`docs/home.md`](docs/home.md).
 - Lembretes (rotas e status): [`docs/reminders.md`](docs/reminders.md).
 - Filtro por período (`startDate`/`endDate`), validação e fuso horário: [`docs/date-range.md`](docs/date-range.md).
@@ -141,37 +142,28 @@ export class GlicemiasController {
 
 ### Contrato de cadastro e login
 
-Fluxo de autenticação do app: **cadastro** cria a conta e o perfil inicial; **login** valida e-mail e senha e devolve o JWT usado nas rotas privadas.
+Fluxo do app (cadastro em duas etapas, nov/2026): **cadastro** cria a conta só com nome, e-mail e senha; **login** devolve o JWT e diz se o perfil está completo; **PATCH /api/profile** completa os dados de saúde. Enquanto o perfil estiver incompleto, só Home, perfil e conta funcionam. Detalhes em [`docs/cadastro-em-etapas.md`](docs/cadastro-em-etapas.md).
 
 > **Atenção (mobile):** o campo de senha se chama `senha`, não `password`. Qualquer campo que não esteja no contrato (incluindo `password`) é rejeitado com `400`, tanto no cadastro quanto no login. A senha nunca é alterada pela API (sem trim, sem conversão).
 
 #### `POST /api/auth/register`
 
-Cria o usuário e o perfil inicial na mesma transação: ou grava os dois, ou nenhum.
+Cria o usuário e um perfil (vazio, ou com os dados de saúde enviados) na mesma transação: ou grava os dois, ou nenhum.
 
 | Status | Quando |
 | --- | --- |
-| `201` | Conta e perfil criados |
+| `201` | Conta criada |
 | `400` | Payload inválido, campo obrigatório ausente ou campo extra enviado |
 | `409` | E-mail já cadastrado (a comparação ignora maiúsculas/minúsculas) |
 
-**Request**
+**Request (1ª etapa)**
 
 ```json
 {
   "nome": "Maria Silva",
   "email": "maria@example.com",
   "senha": "senha-forte-123",
-  "confirmarSenha": "senha-forte-123",
-  "dataNascimento": "1995-04-12",
-  "tipoDiabetes": "TIPO_1",
-  "alturaCm": 170.5,
-  "pesoKg": 68.3,
-  "contatoEmergencia": {
-    "nome": "João Silva",
-    "relacao": "Pai",
-    "telefone": "(41) 99999-9999"
-  }
+  "confirmarSenha": "senha-forte-123"
 }
 ```
 
@@ -183,13 +175,13 @@ Cria o usuário e o perfil inicial na mesma transação: ou grava os dois, ou ne
 | `email` | string | sim | E-mail válido, até 100 caracteres. Salvo em minúsculas e sem espaços nas pontas |
 | `senha` | string | sim | De 8 a 72 caracteres, com letras e números (regra do protótipo). Armazenada somente como hash (bcrypt) |
 | `confirmarSenha` | string | não | Se enviada, deve ser igual a `senha`. Nunca é persistida nem devolvida |
-| `dataNascimento` | string | sim | Formato `AAAA-MM-DD`, data real (rejeita `2020-02-30`), não futura e a partir de `1900-01-01` |
-| `tipoDiabetes` | string | sim | `TIPO_1`, `TIPO_2` ou `OUTRO` |
-| `alturaCm` | number | sim | De 30 a 272, até 2 casas decimais. Aceita número ou texto numérico (`"170.5"`) |
-| `pesoKg` | number | sim | De 1 a 500, até 2 casas decimais. Aceita número ou texto numérico (`"68.3"`) |
-| `contatoEmergencia.nome` | string | sim | Não vazio, até 100 caracteres |
-| `contatoEmergencia.relacao` | string | sim | Não vazio, até 50 caracteres |
-| `contatoEmergencia.telefone` | string | sim | De 8 a 20 caracteres; somente números, espaços e `+ ( ) -` |
+| `dataNascimento` | string | não | Formato `AAAA-MM-DD`, data real (rejeita `2020-02-30`), não futura e a partir de `1900-01-01` |
+| `tipoDiabetes` | string | não | `TIPO_1`, `TIPO_2` ou `OUTRO` |
+| `alturaCm` | number | não | De 30 a 272, até 2 casas decimais. Aceita número ou texto numérico (`"170.5"`) |
+| `pesoKg` | number | não | De 1 a 500, até 2 casas decimais. Aceita número ou texto numérico (`"68.3"`) |
+| `contatoEmergencia` | — | não | **Descontinuado.** Aceito só para versões antigas do app e ignorado (não é validado, gravado nem devolvido) |
+
+Os quatro dados de saúde são opcionais aqui e seguem as mesmas regras do `PATCH /api/profile`. Se vierem os quatro, a conta já nasce com o perfil completo.
 
 **Response `201`**
 
@@ -199,16 +191,12 @@ Cria o usuário e o perfil inicial na mesma transação: ou grava os dois, ou ne
   "nome": "Maria Silva",
   "email": "maria@example.com",
   "createdAt": "2026-10-09T15:00:00.000Z",
+  "perfilCompleto": false,
   "perfil": {
-    "dataNascimento": "1995-04-12",
-    "tipoDiabetes": "TIPO_1",
-    "alturaCm": 170.5,
-    "pesoKg": 68.3,
-    "contatoEmergencia": {
-      "nome": "João Silva",
-      "relacao": "Pai",
-      "telefone": "(41) 99999-9999"
-    }
+    "dataNascimento": null,
+    "tipoDiabetes": null,
+    "alturaCm": null,
+    "pesoKg": null
   }
 }
 ```
@@ -242,14 +230,16 @@ A resposta nunca contém senha, `confirmarSenha` nem hash. O cadastro **não** f
   "user": {
     "id": "3f2b8c1e-7a4d-4e9b-9d57-0a1b2c3d4e5f",
     "nome": "Maria Silva",
-    "email": "maria@example.com"
+    "email": "maria@example.com",
+    "perfilCompleto": false
   }
 }
 ```
 
+- `perfilCompleto: false`: leve a pessoa para completar o perfil e libere só a Home até lá.
 - Envie o token nas rotas privadas: `Authorization: Bearer <accessToken>`.
 - Validade definida por `JWT_EXPIRATION` (padrão do `.env.example`: `1d`). Quando expira, a rota privada responde `401` e o app deve pedir novo login.
-- O payload do token tem somente `sub` (id do usuário), `iat` e `exp`.
+- O payload do token tem somente `sub` (id do usuário), `ver` (versão da sessão), `iat` e `exp`.
 
 **Credenciais inválidas (`401`)**
 
@@ -268,7 +258,7 @@ Senha errada e e-mail não cadastrado recebem exatamente a mesma resposta, para 
 
 #### Erros
 
-Todos os erros seguem o formato padrão descrito em [`docs/errors.md`](docs/errors.md). Em `400`, o campo `details` traz um item por campo inválido, e campos aninhados usam ponto (`contatoEmergencia.telefone`):
+Todos os erros seguem o formato padrão descrito em [`docs/errors.md`](docs/errors.md). Em `400`, o campo `details` traz um item por campo inválido:
 
 ```json
 {
@@ -280,7 +270,7 @@ Todos os erros seguem o formato padrão descrito em [`docs/errors.md`](docs/erro
   "method": "POST",
   "details": [
     { "field": "senha", "messages": ["senha must be longer than or equal to 8 characters"] },
-    { "field": "contatoEmergencia.telefone", "messages": ["telefone deve conter apenas números, espaços e + ( ) - (8 a 20 caracteres)"] }
+    { "field": "email", "messages": ["email must be an email"] }
   ]
 }
 ```
@@ -312,7 +302,7 @@ Campo não previsto no contrato também gera `400`, com a mensagem `property <ca
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"nome":"Maria Silva","email":"maria@example.com","senha":"senha-forte-123","dataNascimento":"1995-04-12","tipoDiabetes":"TIPO_1","alturaCm":170.5,"pesoKg":68.3,"contatoEmergencia":{"nome":"João Silva","relacao":"Pai","telefone":"(41) 99999-9999"}}'
+  -d '{"nome":"Maria Silva","email":"maria@example.com","senha":"senha-forte-123"}'
 
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
@@ -320,7 +310,7 @@ curl -X POST http://localhost:3000/api/auth/login \
 ```
 
 #### `GET /api/users/me` (Bearer)
-200 → `{ id, nome, email, createdAt, perfil: { dataNascimento, tipoDiabetes, alturaCm, pesoKg, contatoEmergencia: { nome, relacao, telefone } } }`
+200 → `{ id, nome, email, createdAt, perfilCompleto, perfil: { dataNascimento, tipoDiabetes, alturaCm, pesoKg } }` (dados de saúde podem ser `null` antes da 2ª etapa)
 401 → token ausente, inválido, expirado ou usuário removido. Nunca retorna senha/hash.
 
 #### `POST /api/auth/forgot-password`
