@@ -45,6 +45,7 @@ Segurança da autenticação: [limites de tentativas, revogação de JWTs e migr
 - Exclusão de conta (LGPD) e seus efeitos: [`docs/account-deletion.md`](docs/account-deletion.md).
 - Glicemias e aplicações de insulina (rotas, enums, datas e status): [`docs/glycemia-insulin.md`](docs/glycemia-insulin.md).
 - Lembretes (rotas e status): [`docs/reminders.md`](docs/reminders.md).
+- Filtro por período (`startDate`/`endDate`), validação e fuso horário: [`docs/date-range.md`](docs/date-range.md).
 - CORS: sem `CORS_ORIGIN`, qualquer origem é aceita (desenvolvimento). Em produção, defina `CORS_ORIGIN` com as origens separadas por vírgula.
 
 ## Documentação da API (Swagger)
