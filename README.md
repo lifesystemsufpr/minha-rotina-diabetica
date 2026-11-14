@@ -44,6 +44,7 @@ Segurança da autenticação: [limites de tentativas, revogação de JWTs e migr
 - Recuperação de senha, SMTP e links do mobile: [`docs/password-recovery.md`](docs/password-recovery.md).
 - Exclusão de conta (LGPD) e seus efeitos: [`docs/account-deletion.md`](docs/account-deletion.md).
 - Glicemias e aplicações de insulina (rotas, enums, datas e status): [`docs/glycemia-insulin.md`](docs/glycemia-insulin.md).
+- Home (resumo da tela inicial em uma chamada): [`docs/home.md`](docs/home.md).
 - Lembretes (rotas e status): [`docs/reminders.md`](docs/reminders.md).
 - Filtro por período (`startDate`/`endDate`), validação e fuso horário: [`docs/date-range.md`](docs/date-range.md).
 - Relatório em PDF (download e compartilhamento no app): [`docs/reports.md`](docs/reports.md#relatório-em-pdf).
