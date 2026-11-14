@@ -2,6 +2,8 @@
 // Valores reais (de um .env) têm prioridade.
 process.env.JWT_SECRET ??= 'segredo-somente-para-teste';
 process.env.JWT_EXPIRATION ??= '15m';
+// Mesmo fuso da API em produção (src/config/timezone.ts), inclusive no CI.
+process.env.TZ ||= 'America/Sao_Paulo';
 // Nunca permite SMTP real nos testes e2e, mesmo com .env local configurado.
 process.env.PASSWORD_RESET_MAIL_MODE = 'disabled';
 // A regressão funcional não esgota limites entre cenários. A suíte de proteção
