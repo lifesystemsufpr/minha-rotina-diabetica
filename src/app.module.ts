@@ -6,10 +6,10 @@ import { UsersModule } from './modules/users/users.module';
 import { DatabaseModule } from './database/database.module';
 import { GlycemiaModule } from './modules/glycemia/glycemia.module';
 import { InsulinModule } from './modules/insulin/insulin.module';
+import { HomeModule } from './modules/home/home.module';
 import { RemindersModule } from './modules/reminders/reminders.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ProfileModule } from './modules/profile/profile.module';
-import { HomeModule } from './modules/home/home.module';
 
 @Module({
   imports: [
@@ -19,9 +19,9 @@ import { HomeModule } from './modules/home/home.module';
     AuthModule,
     GlycemiaModule,
     InsulinModule,
+    HomeModule,
     RemindersModule,
     ProfileModule,
-    HomeModule,
   ],
   controllers: [AppController],
   providers: [AppService],
