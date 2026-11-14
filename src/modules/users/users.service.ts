@@ -101,6 +101,7 @@ export class UsersService {
         email: true,
         senhaHash: true,
         ativo: true,
+        tokenVersion: true,
       },
     });
   }
@@ -114,7 +115,12 @@ export class UsersService {
   ): Promise<void> {
     if (!userId) return; // update com id vazio poderia atingir todas as linhas
     const repo = manager ? manager.getRepository(User) : this.usersRepository;
-    await repo.update({ id: userId }, { senhaHash });
+    const result = await repo.update(
+      { id: userId, ativo: true },
+      { senhaHash, tokenVersion: () => 'token_version + 1' },
+    );
+    if (result.affected !== 1)
+      throw new NotFoundException('Usuário não encontrado.');
   }
 
   // Chamado pelo AuthService no cadastro. Devolve só os campos públicos.

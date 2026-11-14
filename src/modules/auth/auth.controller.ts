@@ -1,4 +1,5 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { AuthRateLimit } from './guards/auth-rate-limit.guard';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -51,6 +52,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @AuthRateLimit('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Autentica e retorna o access token JWT' })
   @ApiOkResponse({
@@ -71,6 +73,7 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @AuthRateLimit('forgot')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Solicita a recuperação de senha',
@@ -96,6 +99,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @AuthRateLimit('reset')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Define uma nova senha usando o token de recuperação',
