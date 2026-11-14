@@ -1,0 +1,40 @@
+name: CI
+
+# Roda em todo PR e em todo push para as branches principais.
+# O merge na development só é liberado com este check verde.
+on:
+  pull_request:
+  push:
+    branches: [development, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: lint, build e testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Lint (sem --fix)
+        run: npm run lint:check
+
+      - name: Build
+        run: npm run build
+
+      - name: Testes unitários
+        run: npm test
+
+      - name: Testes e2e (SQLite em memória)
+        run: npm run test:e2e

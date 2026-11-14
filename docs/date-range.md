@@ -44,21 +44,21 @@ A última regra usa o decorator `IsNotBeforeProperty`
 
 ## Fuso horário
 
-Os limites de cada dia (00:00 e 23:59) são calculados no **fuso horário do
-processo da API**, isto é, da variável de ambiente `TZ` do servidor. Se `TZ` não
-estiver definida, vale o fuso do sistema operacional.
+**Decisão do time (nov/2026): a API usa `America/Sao_Paulo`.** Os limites de
+cada dia (00:00 e 23:59) são calculados nesse fuso, para que "o dia" seja o
+mesmo que a pessoa vê no celular.
+
+- O padrão é aplicado em `src/config/timezone.ts`, chamado pelo `main.ts`.
+- Um `TZ` definido no ambiente ou no `.env` tem prioridade. Não troque o fuso
+  de um ambiente que já tem dados sem combinar com o time: o MySQL guarda
+  `DATETIME` sem fuso, e a API converte usando o fuso do processo.
+- Os testes e2e rodam no mesmo fuso (`test/setup-env.ts`), inclusive no CI.
 
 O `dataHora` dos registros é gravado como instante (o app envia ISO 8601 com
 fuso e a API responde em UTC). Só o recorte "que dia é este" depende do fuso.
 
-Exemplo com a API em `America/Sao_Paulo` (UTC-3): uma glicemia de
-`2026-10-13T23:30:00-03:00` (02:30 UTC do dia 14) aparece em
-`endDate=2026-10-13`. Com a API em UTC, ela cairia no dia 14.
-
-**Recomendação para os ambientes compartilhados:** rodar a API com
-`TZ=America/Sao_Paulo`, para que "o dia" seja o mesmo que a pessoa vê no
-celular. A escolha final do fuso é uma decisão do time; enquanto ela não sai,
-cada ambiente usa o fuso da própria máquina.
+Exemplo: uma glicemia de `2026-10-13T23:30:00-03:00` (02:30 UTC do dia 14)
+aparece em `endDate=2026-10-13`, porque às 23:30 de Brasília ainda é dia 13.
 
 ## Testes
 

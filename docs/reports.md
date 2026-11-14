@@ -120,8 +120,9 @@ Sempre em JSON no formato padrão ([`errors.md`](errors.md)), nunca como
 arquivo: 400 (período inválido ou parâmetro desconhecido), 401 (token), 500
 (falha ao gerar).
 
-### Pendente de decisão
+### Identificação no PDF
 
-A task diz para incluir identificação do usuário "apenas se aprovada". Hoje o
-PDF traz o **nome**, para o médico saber de quem é o relatório. Se a liderança
-não aprovar, basta não passar `userName` em `ReportsService.generatePdf`.
+A task pede identificação do usuário "apenas se aprovada". **Aprovado pela
+liderança (nov/2026):** o PDF traz só o **nome**, para o médico saber de quem é
+o relatório. Nenhum outro dado pessoal (e-mail, data de nascimento) entra no
+arquivo.
