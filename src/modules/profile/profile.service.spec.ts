@@ -49,7 +49,7 @@ describe('ProfileService', () => {
     expect(perfil.alturaCm).toBeNull();
     expect(perfil.pesoKg).toBe(62.3);
     expect(perfil.dataNascimento).toBeNull();
-    expect(perfil.contatoEmergencia).toBeNull();
+    expect(perfil.perfilCompleto).toBe(false);
     expect(perfil).not.toHaveProperty('senhaHash');
   });
 });

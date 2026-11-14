@@ -9,7 +9,6 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -24,7 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ExigePerfilCompleto } from '../profile/guards/perfil-completo.guard';
 import { CreateReminderDto } from './dto/create-reminder.dto';
 import { ReminderResponseDto } from './dto/reminder-response.dto';
 import { UpdateReminderStatusDto } from './dto/update-reminder-status.dto';
@@ -33,7 +32,7 @@ import { RemindersService } from './reminders.service';
 
 @ApiTags('reminders')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@ExigePerfilCompleto()
 @ApiUnauthorizedResponse({
   description: 'Token ausente, inválido, expirado ou de conta excluída',
   type: ErrorResponseDto,

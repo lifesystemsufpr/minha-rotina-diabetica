@@ -2,30 +2,22 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Perfil } from '../users/entities/perfil.entity';
-import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ProfileResponseDto } from './dto/profile-response.dto';
 import { calcularIdade } from './utils/calcular-idade';
+import { isPerfilCompleto } from '../users/utils/perfil-completo';
 
 // decimal vem do MySQL como texto; null continua null (Number(null) seria 0).
 function toNumberOrNull(value: number | string | null): number | null {
   return value === null || value === undefined ? null : Number(value);
 }
 
-// Converte o DTO (contato aninhado) para as colunas da entidade Perfil.
-// Só inclui os campos enviados, para o PATCH alterar apenas eles.
+// Só os campos enviados, para o PATCH alterar apenas eles.
+// contatoEmergencia é descontinuado: aceito por compatibilidade e descartado.
 function toPerfilColumns(dto: UpdateProfileDto): Partial<Perfil> {
-  const { contatoEmergencia, ...rest } = dto;
-  return {
-    ...rest,
-    ...(contatoEmergencia
-      ? {
-          contatoEmergenciaNome: contatoEmergencia.nome,
-          contatoEmergenciaRelacao: contatoEmergencia.relacao,
-          contatoEmergenciaTelefone: contatoEmergencia.telefone,
-        }
-      : {}),
-  };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { contatoEmergencia, ...campos } = dto;
+  return campos;
 }
 
 @Injectable()
@@ -34,24 +26,6 @@ export class ProfileService {
     @InjectRepository(Perfil)
     private readonly perfilRepository: Repository<Perfil>,
   ) {}
-
-  async create(
-    createProfileDto: CreateProfileDto,
-    usuarioId: string,
-  ): Promise<Perfil> {
-    const perfil = this.perfilRepository.create({
-      ...toPerfilColumns(createProfileDto),
-      user: { id: usuarioId },
-    });
-
-    return await this.perfilRepository.save(perfil);
-  }
-
-  async findByUsuarioId(usuarioId: string): Promise<Perfil | null> {
-    return await this.perfilRepository.findOne({
-      where: { user: { id: usuarioId } },
-    });
-  }
 
   async getProfileData(usuarioId: string): Promise<ProfileResponseDto> {
     const perfil = await this.perfilRepository.findOne({
@@ -94,13 +68,7 @@ export class ProfileService {
       alturaCm: toNumberOrNull(perfil.alturaCm),
       pesoKg: toNumberOrNull(perfil.pesoKg),
       tipoDiabetes: perfil.tipoDiabetes ?? null,
-      contatoEmergencia: perfil.contatoEmergenciaNome
-        ? {
-            nome: perfil.contatoEmergenciaNome,
-            relacao: perfil.contatoEmergenciaRelacao,
-            telefone: perfil.contatoEmergenciaTelefone,
-          }
-        : null,
+      perfilCompleto: isPerfilCompleto(perfil),
     };
   }
 }

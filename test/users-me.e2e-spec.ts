@@ -18,7 +18,6 @@ interface MeBody {
     tipoDiabetes: string;
     alturaCm: number;
     pesoKg: number;
-    contatoEmergencia: { nome: string; relacao: string; telefone: string };
   };
 }
 
@@ -70,12 +69,8 @@ describe('GET /users/me (e2e)', () => {
       tipoDiabetes: 'TIPO_1',
       alturaCm: 170.5,
       pesoKg: 60.5,
-      contatoEmergencia: {
-        nome: 'João Silva',
-        relacao: 'Pai',
-        telefone: '(41) 99999-9999',
-      },
     });
+    expect((body as { perfilCompleto?: boolean }).perfilCompleto).toBe(true);
   });
 
   it('sem token: 401', async () => {

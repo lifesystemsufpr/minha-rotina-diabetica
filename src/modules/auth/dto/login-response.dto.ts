@@ -9,6 +9,13 @@ export class LoginUserDto {
 
   @ApiProperty({ example: 'maria@example.com' })
   email!: string;
+
+  @ApiProperty({
+    example: false,
+    description:
+      'false: o app leva para completar o perfil (PATCH /profile) e só libera a Home.',
+  })
+  perfilCompleto!: boolean;
 }
 
 export class LoginResponseDto {
