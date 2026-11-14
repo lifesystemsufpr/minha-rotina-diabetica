@@ -58,7 +58,7 @@ Segurança da autenticação: [limites de tentativas, revogação de JWTs e migr
   `development` atualizada, abra um PR e espere a revisão.
 - O GitHub Actions (`.github/workflows/ci.yml`) roda em todo PR:
   `npm run lint:check`, `npm run build`, `npm test` e `npm run test:e2e`.
-  O merge só fica liberado com o check verde.
+  Só faça o merge com o check verde.
 - Antes de abrir o PR, rode os mesmos comandos na sua máquina. `npm run lint`
   corrige a formatação sozinho; `npm run lint:check` só confere, como o CI.
 
