@@ -2,6 +2,8 @@
 
 Backend do projeto Minha Rotina Diabética, construído com NestJS.
 
+Segurança da autenticação: [limites de tentativas, revogação de JWTs e migration obrigatória](docs/auth-security.md). JWTs anteriores à inclusão de versão exigem novo login.
+
 ## Stack
 - NestJS 11 + TypeScript
 - REST API
@@ -39,9 +41,12 @@ Backend do projeto Minha Rotina Diabética, construído com NestJS.
 - Todas as rotas têm o prefixo `/api` (ex.: `POST /api/users`). No mobile, a `baseURL` deve terminar em `/api`.
 - Todo erro sai no mesmo formato, com `details` por campo em erros de validação. Veja [`docs/errors.md`](docs/errors.md).
 - Regras de validação de DTOs: [`docs/validation.md`](docs/validation.md).
+- Recuperação de senha, SMTP e links do mobile: [`docs/password-recovery.md`](docs/password-recovery.md).
 - Exclusão de conta (LGPD) e seus efeitos: [`docs/account-deletion.md`](docs/account-deletion.md).
 - Glicemias e aplicações de insulina (rotas, enums, datas e status): [`docs/glycemia-insulin.md`](docs/glycemia-insulin.md).
 - Lembretes (rotas e status): [`docs/reminders.md`](docs/reminders.md).
+- Filtro por período (`startDate`/`endDate`), validação e fuso horário: [`docs/date-range.md`](docs/date-range.md).
+- Relatórios: histórico consolidado de glicemias e insulina: [`docs/reports.md`](docs/reports.md).
 - CORS: sem `CORS_ORIGIN`, qualquer origem é aceita (desenvolvimento). Em produção, defina `CORS_ORIGIN` com as origens separadas por vírgula.
 
 ## Documentação da API (Swagger)
@@ -315,30 +320,3 @@ Token: uso único, expira em `PASSWORD_RESET_TOKEN_TTL_MINUTES` (padrão 30), gu
 Body: `{ "token": "<recebido por e-mail>", "novaSenha": "8 a 72 caracteres, com letras e números" }`
 200 → `{ "message": "Senha redefinida com sucesso." }`
 400 → payload inválido ou token inválido/expirado/já usado (mesma mensagem: "Token inválido ou expirado").
-
-
-## Task
-[BACK] Padronizar filtro por data (startDate / endDate)
-
-## Já existia
-DateRangeQueryDto e dateRangeWhere (common/), já aplicados em GET /glycemias e GET /insulins, com datas AAAA-MM-DD e os dois extremos inclusivos.
-
-## O que foi feito
-- Validação startDate <= endDate: endDate anterior a startDate retorna 400 (novo decorator IsNotBeforeProperty, reutilizável)
-- Como a validação está no DTO compartilhado, vale para Glicemia e Insulina (e futuramente Relatórios) sem mudar os módulos
-- Testes de intervalo: sem datas, só início, só fim, intervalo, mesmo dia, fim de mês, fim de ano, ano bissexto
-- Testes do DTO: intervalo válido/inválido, data com horário, data inexistente, formato errado
-- Convenção documentada no Swagger e no README
-
-## Convenção
-- Datas AAAA-MM-DD; startDate inclusivo (00:00) e endDate inclusivo (dia inteiro)
-- startDate == endDate retorna um único dia
-
-## Como testar
-npm test -- date-range e npm test (suíte completa)
-
-## Banco
-Sem migration.
-
-## Pendências
-- Timezone: hoje o dia é contado no fuso do servidor. Decisão do time pendente (proposta: America/Sao_Paulo); o README e o Swagger devem ser atualizados com o fuso escolhido.

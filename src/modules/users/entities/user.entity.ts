@@ -31,6 +31,9 @@ export class User {
   @Column({ type: 'boolean', default: true })
   ativo: boolean;
 
+  @Column({ name: 'token_version', type: 'int', default: 0 })
+  tokenVersion: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

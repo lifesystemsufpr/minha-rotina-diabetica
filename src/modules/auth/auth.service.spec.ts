@@ -77,10 +77,11 @@ describe('AuthService', () => {
         email: 'maria@example.com',
         senhaHash,
         ativo: true,
+        tokenVersion: 0,
       });
       const result = await service.login({ email: 'maria@example.com', senha });
 
-      expect(jwt.sign).toHaveBeenCalledWith({ sub: 'uuid-1' });
+      expect(jwt.sign).toHaveBeenCalledWith({ sub: 'uuid-1', ver: 0 });
       expect(result).toEqual({
         accessToken: 'token-jwt',
         user: { id: 'uuid-1', nome: 'Maria', email: 'maria@example.com' },
