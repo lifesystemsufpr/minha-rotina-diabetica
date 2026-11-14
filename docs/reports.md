@@ -81,7 +81,9 @@ servidor.
 | --- | --- |
 | `Content-Type` | `application/pdf` |
 | `Content-Disposition` | `attachment; filename="relatorio-rotina-diabetica_<inicio>_a_<fim>.pdf"` |
+| `Content-Length` | tamanho do arquivo em bytes |
 | `Cache-Control` | `no-store` (dados de saúde não devem ficar em cache) |
+| `X-Content-Type-Options` | `nosniff` |
 
 Nome do arquivo: `relatorio-rotina-diabetica_2026-10-01_a_2026-10-13.pdf`; só
 com início, `..._2026-10-01_a_hoje.pdf`; só com fim, `..._inicio_a_2026-10-13.pdf`;
@@ -94,6 +96,23 @@ e horas no fuso do processo da API ([`date-range.md`](date-range.md#fuso-horári
 
 **Sem registros no período:** 200 com um PDF válido que diz "Nenhum registro
 encontrado no período selecionado".
+
+### Download e compartilhamento no app
+
+Como o arquivo vem direto na resposta, não existe link público nem URL
+previsível: só quem tem o token consegue baixar, e só o próprio relatório.
+
+No React Native:
+
+1. Baixar enviando `Authorization: Bearer <token>` e salvar em cache ou
+   documentos do aparelho (ex.: `expo-file-system` com `downloadAsync` e
+   `headers`, ou `react-native-blob-util`).
+2. Abrir o compartilhamento nativo com o caminho local do arquivo (ex.:
+   `expo-sharing`).
+3. Usar o nome de `Content-Disposition` como nome do arquivo salvo.
+
+Para clientes web (ex.: Expo Web), a API libera a leitura de
+`Content-Disposition` via CORS (`exposedHeaders` em `src/app.setup.ts`).
 
 ### Erros
 
