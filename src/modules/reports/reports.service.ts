@@ -30,28 +30,24 @@ export class ReportsService {
     ]);
 
     const registros: ReportRecordDto[] = [
-      ...glicemias.map(
-        (g): ReportRecordDto => ({
-          type: RecordType.GLYCEMIA,
-          id: g.id,
-          dateTime: g.dataHora,
-          glycemia: { valor: g.valor, momento: g.momento, status: g.status },
-          insulin: null,
-        }),
-      ),
-      ...insulinas.map(
-        (i): ReportRecordDto => ({
-          type: RecordType.INSULIN,
-          id: i.id,
-          dateTime: i.dataHora,
-          glycemia: null,
-          insulin: {
-            tipo: i.tipo,
-            doseUi: i.doseUi,
-            localAplicacao: i.localAplicacao,
-          },
-        }),
-      ),
+      ...glicemias.map((g): ReportRecordDto => ({
+        type: RecordType.GLYCEMIA,
+        id: g.id,
+        dateTime: g.dataHora,
+        glycemia: { valor: g.valor, momento: g.momento, status: g.status },
+        insulin: null,
+      })),
+      ...insulinas.map((i): ReportRecordDto => ({
+        type: RecordType.INSULIN,
+        id: i.id,
+        dateTime: i.dataHora,
+        glycemia: null,
+        insulin: {
+          tipo: i.tipo,
+          doseUi: i.doseUi,
+          localAplicacao: i.localAplicacao,
+        },
+      })),
     ];
 
     return registros.sort(porDataDesc);
