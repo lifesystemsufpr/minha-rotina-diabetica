@@ -39,7 +39,8 @@ export class ReportRecordDto {
 
   @ApiProperty({
     example: '2026-10-12T11:30:00.000Z',
-    description: 'Data e hora do registro (ISO 8601). Use para agrupar por dia.',
+    description:
+      'Data e hora do registro (ISO 8601). Use para agrupar por dia.',
   })
   dateTime!: Date;
 

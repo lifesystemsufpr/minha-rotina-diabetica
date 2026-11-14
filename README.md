@@ -2,6 +2,8 @@
 
 Backend do projeto Minha Rotina Diabética, construído com NestJS.
 
+Segurança da autenticação: [limites de tentativas, revogação de JWTs e migration obrigatória](docs/auth-security.md). JWTs anteriores à inclusão de versão exigem novo login.
+
 ## Stack
 - NestJS 11 + TypeScript
 - REST API
@@ -36,12 +38,15 @@ Backend do projeto Minha Rotina Diabética, construído com NestJS.
 
 ## Convenções da API
 
-- Todas as rotas têm o prefixo `/api` (ex.: `POST /api/auth login`). No mobile, a `baseURL` deve terminar em `/api`.
+- Todas as rotas têm o prefixo `/api` (ex.: `POST /api/auth/login`). No mobile, a `baseURL` deve terminar em `/api`.
 - Todo erro sai no mesmo formato, com `details` por campo em erros de validação. Veja [`docs/errors.md`](docs/errors.md).
 - Regras de validação de DTOs: [`docs/validation.md`](docs/validation.md).
+- Recuperação de senha, SMTP e links do mobile: [`docs/password-recovery.md`](docs/password-recovery.md).
 - Exclusão de conta (LGPD) e seus efeitos: [`docs/account-deletion.md`](docs/account-deletion.md).
 - Glicemias e aplicações de insulina (rotas, enums, datas e status): [`docs/glycemia-insulin.md`](docs/glycemia-insulin.md).
 - Lembretes (rotas e status): [`docs/reminders.md`](docs/reminders.md).
+- Filtro por período (`startDate`/`endDate`), validação e fuso horário: [`docs/date-range.md`](docs/date-range.md).
+- Relatórios: histórico consolidado e PDF de glicemias e insulina: [`docs/reports.md`](docs/reports.md).
 - CORS: sem `CORS_ORIGIN`, qualquer origem é aceita (desenvolvimento). Em produção, defina `CORS_ORIGIN` com as origens separadas por vírgula.
 
 ## Documentação da API (Swagger)
@@ -323,37 +328,3 @@ Body: `{ "token": "<recebido por e-mail>", "novaSenha": "8 a 72 caracteres, com 
 - Busque registros por `{ id, user: { id: userId } }`. Registro de outro usuário responde `404`, igual a um id inexistente, para não revelar que ele existe. O projeto não usa `403` nesse caso.
 - Respostas usam DTOs de saída explícitos (nunca a entidade), para não vazar senha/hash nem campos internos.
 - Detalhes dos códigos de erro: [`docs/errors.md`](docs/errors.md).
-
-# Relatório em PDF
-
-GET /api/reports/pdf (requer Bearer token)
-
-| Query | Formato | Descrição |
-| --- | --- | --- |
-| startDate | AAAA-MM-DD, opcional | Início do período (inclusivo) |
-| endDate | AAAA-MM-DD, opcional | Fim do período (inclusivo, dia todo) |
-
-**Resposta 200:** Content-Type: application/pdf,
-Content-Disposition: attachment; filename="relatorio-rotina-diabetica_<inicio>_a_<fim>.pdf",
-Cache-Control: no-store. O arquivo vem direto no corpo (sem URL temporária).
-
-**Conteúdo:** título, período, data de geração, resumo (glicemias e insulina)
-e tabela de registros, do mais recente para o mais antigo. O PDF traz o nome do
-usuário (e nenhum outro dado pessoal), para identificar de quem é o relatório
-quando for encaminhado a um médico.
-
-**Sem registros no período:** 200 com PDF contendo "Nenhum registro encontrado".
-
-**Erros:** JSON no formato padrão (docs/errors.md): 400 (período inválido),
-401 (token), 500 (falha ao gerar).
-
-**Mobile:** baixar enviando o header Authorization (não é abrível por link simples).
-
-**Download pelo app (React Native):** a API devolve o arquivo direto, sem URL
-temporária. Nada fica guardado no servidor nem acessível por link, então não há
-URL previsível nem relatório público. O app deve baixar enviando o header
-`Authorization: Bearer <token>`, salvar o arquivo em cache/documentos do
-aparelho (ex.: `expo-file-system` `downloadAsync` com `headers`, ou
-`react-native-blob-util`) e então abrir o compartilhamento nativo com o caminho
-local (ex.: `expo-sharing`). O nome sugerido está em `Content-Disposition`.
-Para clientes web, o `Content-Disposition` é exposto via CORS.

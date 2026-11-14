@@ -1,4 +1,11 @@
-import { Controller, Get, Query, UseGuards, Res, StreamableFile } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+  Res,
+  StreamableFile,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,

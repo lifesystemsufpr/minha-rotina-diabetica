@@ -72,6 +72,7 @@ describe('Auth + rota protegida', () => {
       'exp',
       'iat',
       'sub',
+      'ver',
     ]);
   });
 

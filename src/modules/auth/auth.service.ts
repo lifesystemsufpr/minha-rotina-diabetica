@@ -45,13 +45,13 @@ export class AuthService {
     }
 
     return {
-      accessToken: this.signAccessToken(String(user.id)),
+      accessToken: this.signAccessToken(String(user.id), user.tokenVersion),
       user: { id: user.id, nome: user.nome, email: user.email },
     };
   }
 
-  signAccessToken(userId: string): string {
-    const payload: JwtPayload = { sub: userId }; // sem senha/hash/dados sensíveis
+  signAccessToken(userId: string, version: number): string {
+    const payload: JwtPayload = { sub: userId, ver: version }; // sem senha/hash/dados sensíveis
     return this.jwt.sign(payload);
   }
 }
