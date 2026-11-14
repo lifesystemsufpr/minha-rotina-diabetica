@@ -35,8 +35,9 @@ O formato do erro de validação está descrito em [`docs/errors.md`](./errors.m
 
 ## Exemplo
 
-Veja `src/modules/users/dto/create-user.dto.ts` e
-`src/modules/users/users.controller.ts` como referência de uso.
+Veja `src/modules/auth/dto/register.dto.ts` e
+`src/modules/auth/auth.controller.ts` como referência de uso. Para query
+string, veja `src/common/dto/date-range-query.dto.ts`.
 
 ## Testando
 
@@ -44,9 +45,11 @@ Veja `src/modules/users/dto/create-user.dto.ts` e
 npm run test:e2e
 ```
 
-O arquivo `test/users-validation.e2e-spec.ts` cobre:
+O arquivo `test/auth-register.e2e-spec.ts` cobre:
 - payload válido → 201
-- campo obrigatório ausente → 400
-- formato inválido (e-mail) → 400
-- campo extra não previsto no DTO → 400
-- vários campos inválidos → 400 com `details` listando cada campo
+- cada campo inválido → 400 com o campo em `details`
+- campo obrigatório ausente e corpo vazio → 400
+- campo extra não previsto no DTO (ex.: `id`, `isAdmin`) → 400
+
+A antiga rota de demonstração `POST /api/users`, que só ecoava o payload, foi
+removida na revisão de segurança (era pública e não fazia nada).

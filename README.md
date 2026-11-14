@@ -38,7 +38,7 @@ Segurança da autenticação: [limites de tentativas, revogação de JWTs e migr
 
 ## Convenções da API
 
-- Todas as rotas têm o prefixo `/api` (ex.: `POST /api/users`). No mobile, a `baseURL` deve terminar em `/api`.
+- Todas as rotas têm o prefixo `/api` (ex.: `POST /api/auth/login`). No mobile, a `baseURL` deve terminar em `/api`.
 - Todo erro sai no mesmo formato, com `details` por campo em erros de validação. Veja [`docs/errors.md`](docs/errors.md).
 - Regras de validação de DTOs: [`docs/validation.md`](docs/validation.md).
 - Recuperação de senha, SMTP e links do mobile: [`docs/password-recovery.md`](docs/password-recovery.md).

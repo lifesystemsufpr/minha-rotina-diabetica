@@ -1,18 +1,14 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
   HttpCode,
-  Post,
   UseGuards,
   UnauthorizedException,
 } from '@nestjs/common';
 import {
-  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
-  ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -23,26 +19,13 @@ import {
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UsersService } from './users.service';
 import { toUserResponse, UserResponseDto } from './dto/user-response.dto';
+
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly users: UsersService) {}
-
-  @Post()
-  @ApiCreatedResponse({ description: 'Payload válido' })
-  @ApiBadRequestResponse({
-    description: 'Payload inválido; `details` lista os erros por campo',
-    type: ErrorResponseDto,
-  })
-  create(@Body() dto: CreateUserDto) {
-    return {
-      message: 'Usuário validado com sucesso',
-      data: dto,
-    };
-  }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
