@@ -103,7 +103,31 @@ Os commits citados estão na `development`. Para ver um deles:
 | Home não conta registros com data futura | `70afd86` (#46) | Cadastre uma glicemia para daqui a 1 hora: `GET /api/home/summary` continua mostrando a anterior como última |
 | Descrição da exclusão de conta no Swagger (dizia que os dados ficavam no banco, o que deixou de ser verdade em 19/10); roteiro de backup; este documento | PR desta mudança | `DELETE /api/users/me` no Swagger descreve o apagamento. [`deploy-backup.md`](deploy-backup.md) |
 
-### Roteiro do #45 (cadastro em etapas)
+## Merges que resolveram conflitos
+
+Alguns PRs da equipe partiam de versões antigas da `development`. Nos merges
+abaixo, a resolução dos conflitos também é mudança da revisão. A mensagem de
+cada commit (`git show <commit>`) explica a escolha. Para ver só o que a
+resolução mudou: `git show --remerge-diff <commit>`.
+
+| Commit | PR | O que a resolução fez |
+| --- | --- | --- |
+| `4441f15` | #6 e #8 | Swagger fica só em `src/config/swagger.config.ts`. `CreateUserDto` junta a documentação do #8 com a validação do #6 |
+| `25b752c` | #12, #16 e #18 | `app.module.ts` com Auth e Profile. Em Users, `GET /users/me` (#18) e `DELETE /users/me` (#12) no mesmo controller e service |
+| `ae310a6` | #18 e #19 | Fica a versão do #19, mais a regra de senha (`password-policy.ts`) e a data futura comparada com o dia local, não UTC (depois das 21h o dia seguinte era aceito) |
+| `108fe8a` | #19 e #28 | A nova senha da recuperação segue a regra do cadastro. `PASSWORD_RESET_TOKEN_TTL_MINUTES` foi para o `.env.example` |
+| `80d7da6` | #14 e #28 | O login recusa conta inativa com a mensagem genérica. Fica um só `IsNotFutureDate`. Os testes passam a cadastrar com o perfil completo |
+| `04afa5e` | #27 | A cadeia de glicemia e insulina recebe a `development` atual. Os ajustes de glicemia e insulina estão no `d6bb940` |
+| `8eb9a22` | #36 | Vale a versão da `development` para glicemia e insulina. As migrations `CriarGlicemias` e `CriarInsulinas` saíram, porque a `InitialSchema` já cria as tabelas e rodar as duas quebraria o `migration:run` |
+| `6369cc7`, `d6627ca`, `1a6e7d2` | #37, #38 e #40 | O mesmo critério do `8eb9a22`. Por isso os três PRs entraram sem mudar a `development` |
+| `4f3cc71` | #33 e #41 | Documentação do PDF do README para `reports.md`. Exemplo do README corrigido. O teste do PDF passou a usar `responseType('blob')` porque não compilava |
+| `5536865` | #41 e #42 | Instruções de download e compartilhamento em `reports.md`, com os headers `Content-Length` e `X-Content-Type-Options` |
+
+Como conferir: `npm run migration:show` lista só as 5 migrations oficiais.
+Cadastro com data de nascimento de amanhã, feito depois das 21h, responde 400.
+`npm run test:e2e` cobre o resto.
+
+## Roteiro do #45 (cadastro em etapas)
 
 1. `POST /api/auth/register` só com `nome`, `email`, `senha` e
    `confirmarSenha`: 201 com `perfilCompleto: false` e os dados de saúde
@@ -166,10 +190,23 @@ lembrete passa.
 Arquivos: `src/features/home/services/home-model.ts`, `home-service.ts`,
 `screens/HomeScreen.tsx` e `scripts/home.test.mjs`.
 
+**Ordem de publicação:** a API com `GET /home/summary` (#36) precisa estar no
+ar **antes** desta versão do app. Sem a rota, a Home quebra para todo mundo. O
+filtro de data futura do lado da API (#46) é desejável, mas o app também
+descarta registros futuros.
+
 Como conferir:
 
-- `npm run test:home` e `npm run typecheck`;
-- no app, com uma conta de perfil incompleto, a Home abre sem erro.
+- `npm run test:home` (20 testes) e `npm run typecheck`;
+- rode o app com `EXPO_PUBLIC_API_URL` apontando para a API local e entre com
+  uma conta de perfil incompleto. A Home abre sem erro, e a aba de rede mostra
+  só `GET /api/home/summary`, sem 403;
+- complete o perfil, cadastre uma glicemia e uma insulina com horário futuro e
+  toque em **Atualizar resumo**. A glicemia aparece como última e no gráfico de
+  hoje, e a insulina futura não aparece.
+
+Esses passos foram feitos em 14/11 no Expo web, contra a API e o MariaDB
+locais.
 
 O PR no repositório do app ainda não foi aberto: depende do ok da equipe do
 app.

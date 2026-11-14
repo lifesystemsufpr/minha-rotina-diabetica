@@ -7,6 +7,11 @@ algo der errado. Ele foi ensaiado em nov/2026 no MariaDB 10.4, com a migration
 Quem roda é quem tem acesso ao servidor do banco. O repositório não guarda
 endereço nem senha de produção, e eles não devem ir para o Git.
 
+O ensaio foi no MariaDB. Os comandos são os mesmos no MySQL. No MySQL 8.0.21
+ou mais novo, com usuário sem permissão `PROCESS` (comum em banco gerenciado),
+o `mysqldump` sem `--no-tablespaces` falha. Por isso a opção já está no
+comando abaixo.
+
 ## Antes do deploy
 
 1. Avise quem usa o app sobre a janela de manutenção. Este deploy também
@@ -26,7 +31,7 @@ endereço nem senha de produção, e eles não devem ir para o Git.
    histórico:
 
    ```bash
-   mysqldump -h HOST -P PORTA -u USUARIO -p --single-transaction --routines --triggers --default-character-set=utf8mb4 BANCO > backup-AAAA-MM-DD.sql
+   mysqldump -h HOST -P PORTA -u USUARIO -p --single-transaction --no-tablespaces --routines --triggers --default-character-set=utf8mb4 BANCO > backup-AAAA-MM-DD.sql
    ```
 
 5. Confira que o arquivo não está vazio e termina com `-- Dump completed`:
@@ -35,9 +40,21 @@ endereço nem senha de produção, e eles não devem ir para o Git.
    tail -n 1 backup-AAAA-MM-DD.sql
    ```
 
-   O arquivo tem dados de saúde (dados pessoais sensíveis, LGPD). Guarde-o
-   fora do repositório, com acesso restrito, e apague-o quando a versão
-   estiver confirmada.
+6. Teste se o backup restaura, num banco à parte, antes de mexer no de
+   produção. Os números das duas colunas devem ser iguais:
+
+   ```bash
+   mysql -h HOST -P PORTA -u USUARIO -p -e "CREATE DATABASE BANCO_teste_restore CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+   mysql -h HOST -P PORTA -u USUARIO -p --default-character-set=utf8mb4 BANCO_teste_restore < backup-AAAA-MM-DD.sql
+   mysql -h HOST -P PORTA -u USUARIO -p -e "SELECT (SELECT COUNT(*) FROM BANCO.usuarios), (SELECT COUNT(*) FROM BANCO_teste_restore.usuarios), (SELECT COUNT(*) FROM BANCO.perfis), (SELECT COUNT(*) FROM BANCO_teste_restore.perfis), (SELECT COUNT(*) FROM BANCO.glicemias), (SELECT COUNT(*) FROM BANCO_teste_restore.glicemias);"
+   mysql -h HOST -P PORTA -u USUARIO -p -e "DROP DATABASE BANCO_teste_restore;"
+   ```
+
+   Sem permissão para criar outro banco, restaure numa cópia local.
+
+O arquivo tem dados de saúde (dados pessoais sensíveis, LGPD). Guarde-o fora
+do repositório, com acesso restrito, e apague-o quando a versão estiver
+confirmada.
 
 ## Deploy
 
@@ -57,15 +74,18 @@ Há dois caminhos. Use o primeiro sempre que os dados importarem.
 ### 1. Restaurar o backup (volta tudo, inclusive os dados apagados)
 
 1. Pare a API.
-2. Recrie o banco e restaure:
+2. Faça um backup do banco **como está agora**, com o mesmo `mysqldump`, num
+   arquivo com outro nome. Ele guarda o que foi gravado depois do deploy, que
+   se perde na restauração e pode precisar ser recuperado à mão.
+3. Recrie o banco e restaure o backup de antes do deploy:
 
    ```bash
    mysql -h HOST -P PORTA -u USUARIO -p -e "DROP DATABASE BANCO; CREATE DATABASE BANCO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
    mysql -h HOST -P PORTA -u USUARIO -p --default-character-set=utf8mb4 BANCO < backup-AAAA-MM-DD.sql
    ```
 
-3. Volte o código para a versão anterior e suba a API de novo.
-4. Confira com `npm run migration:show` que a migration nova aparece de novo
+4. Volte o código para a versão anterior e suba a API de novo.
+5. Confira com `npm run migration:show` que a migration nova aparece de novo
    como `[ ]` (não aplicada).
 
 ### 2. `migration:revert` (volta só a estrutura)
@@ -83,7 +103,8 @@ Num banco local de teste:
 
 1. Rodei as migrations até a anterior à nova e gravei um usuário com contato de
    emergência.
-2. Fiz o backup com o `mysqldump` acima.
+2. Fiz o backup com o `mysqldump` acima e o restaurei num banco à parte: as
+   contagens de `usuarios`, `perfis` e `glicemias` bateram.
 3. Rodei `migration:run`: as colunas de contato saíram.
 4. Recriei o banco e restaurei o backup. O contato voltou igual, e
    `migration:show` mostrou a `RemoveContatoEmergencia` como não aplicada.
