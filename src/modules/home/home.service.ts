@@ -1,90 +1,109 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
+import { dateRangeWhere } from '../../common/utils/date-range';
+import { toGlycemiaResponse } from '../glycemia/dto/glycemia-response.dto';
+import { Glicemia } from '../glycemia/entities/glicemia.entity';
+import { toInsulinResponse } from '../insulin/dto/insulin-response.dto';
+import { Insulina } from '../insulin/entities/insulina.entity';
+import { Lembrete } from '../reminders/entities/lembrete.entity';
+import { StatusLembrete } from '../reminders/enums/status-lembrete.enum';
+import { UsersService } from '../users/users.service';
+import { HomeSummaryResponseDto } from './dto/home-summary-response.dto';
 
-export interface GlicemiaRow {
-  id: string;
-  valor: string;
-  momento: string;
-  dataHora: Date;
+// 'AAAA-MM-DD' do dia local (fuso do processo da API, como o filtro por
+// período em docs/date-range.md).
+function diaLocal(data: Date): string {
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const dia = String(data.getDate()).padStart(2, '0');
+  return `${data.getFullYear()}-${mes}-${dia}`;
 }
-export interface InsulinaRow {
-  id: string;
-  tipo: string;
-  doseUi: string;
-  localAplicacao: string;
-  dataHora: Date;
-}
-export interface LembreteRow {
-  id: string;
-  titulo: string;
-  dataHora: Date;
-}
-export interface PontoRow {
-  dataHora: Date;
-  valor: string;
-}
-
-// diz se a data é de hoje (data do servidor)
-const ehHoje = (data?: Date) =>
-  !!data && data.toDateString() === new Date().toDateString();
 
 @Injectable()
 export class HomeService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectRepository(Glicemia)
+    private readonly glicemias: Repository<Glicemia>,
+    @InjectRepository(Insulina)
+    private readonly insulinas: Repository<Insulina>,
+    @InjectRepository(Lembrete)
+    private readonly lembretes: Repository<Lembrete>,
+    private readonly users: UsersService,
+  ) {}
 
-  async getSummary(userId: string) {
-    // todas as consultas filtram por usuario_id, que vem do token
-    const [usuario] = await this.dataSource.query<{ nome: string }[]>(
-      'SELECT nome FROM usuarios WHERE id = ?',
-      [userId],
-    );
+  // Todas as consultas filtram pelo usuário do token. `agora` é parâmetro
+  // para os testes conseguirem fixar o relógio.
+  async getSummary(
+    userId: string,
+    agora = new Date(),
+  ): Promise<HomeSummaryResponseDto> {
+    const doUsuario = { user: { id: userId } };
+    const hoje = diaLocal(agora);
+    const seisDiasAtras = new Date(agora);
+    seisDiasAtras.setDate(seisDiasAtras.getDate() - 6);
 
-    // última glicemia do usuário (a mais recente que não foi excluída)
-    const [glicemia] = await this.dataSource.query<GlicemiaRow[]>(
-      `SELECT id, valor, momento, data_hora AS dataHora FROM glicemias WHERE usuario_id = ? AND deleted_at IS NULL
-        ORDER BY data_hora DESC LIMIT 1`,
-      [userId],
-    );
-
-    // última aplicação de insulina do usuário
-    const [insulina] = await this.dataSource.query<InsulinaRow[]>(
-      `SELECT id, tipo, dose_ui AS doseUi, local_aplicacao AS localAplicacao, data_hora AS dataHora FROM insulinas
-        WHERE usuario_id = ? AND deleted_at IS NULL ORDER BY data_hora DESC LIMIT 1`,
-      [userId],
-    );
-
-    // só lembrete ATIVO e que ainda não passou
-    const [lembrete] = await this.dataSource.query<LembreteRow[]>(
-      `SELECT id, titulo, data_hora AS dataHora FROM lembretes WHERE usuario_id = ? AND status = 'ativo' AND data_hora >= NOW()
-       ORDER BY data_hora ASC LIMIT 1`,
-      [userId],
-    );
-
-    // glicemias de hoje e dos 6 dias anteriores, para o gráfico
-    const grafico = await this.dataSource.query<PontoRow[]>(
-      `SELECT data_hora AS dataHora, valor FROM glicemias WHERE usuario_id = ? AND deleted_at IS NULL
-       AND data_hora >= CURDATE() - INTERVAL 6 DAY ORDER BY data_hora ASC`,
-      [userId],
-    );
+    const [
+      usuario,
+      ultimaGlicemia,
+      ultimaInsulina,
+      proximoLembrete,
+      glicemiaHoje,
+      insulinaHoje,
+      grafico,
+    ] = await Promise.all([
+      this.users.findById(userId),
+      this.glicemias.findOne({
+        where: doUsuario,
+        order: { dataHora: 'DESC', id: 'ASC' },
+      }),
+      this.insulinas.findOne({
+        where: doUsuario,
+        order: { dataHora: 'DESC', id: 'ASC' },
+      }),
+      this.lembretes.findOne({
+        where: {
+          ...doUsuario,
+          status: StatusLembrete.ATIVO,
+          dataHora: MoreThanOrEqual(agora),
+        },
+        order: { dataHora: 'ASC', id: 'ASC' },
+      }),
+      this.glicemias.exists({
+        where: { ...doUsuario, dataHora: dateRangeWhere(hoje, hoje) },
+      }),
+      this.insulinas.exists({
+        where: { ...doUsuario, dataHora: dateRangeWhere(hoje, hoje) },
+      }),
+      this.glicemias.find({
+        where: {
+          ...doUsuario,
+          dataHora: dateRangeWhere(diaLocal(seisDiasAtras), hoje),
+        },
+        order: { dataHora: 'ASC', id: 'ASC' },
+      }),
+    ]);
 
     return {
       nome: usuario?.nome ?? null,
-      ultimaGlicemia: glicemia
-        ? { ...glicemia, valor: Number(glicemia.valor) }
+      ultimaGlicemia: ultimaGlicemia
+        ? toGlycemiaResponse(ultimaGlicemia)
         : null,
-      ultimaInsulina: insulina
-        ? { ...insulina, doseUi: Number(insulina.doseUi) }
+      ultimaInsulina: ultimaInsulina ? toInsulinResponse(ultimaInsulina) : null,
+      proximoLembrete: proximoLembrete
+        ? {
+            id: proximoLembrete.id,
+            titulo: proximoLembrete.titulo,
+            dataHora: proximoLembrete.dataHora,
+            status: proximoLembrete.status,
+          }
         : null,
-      proximoLembrete: lembrete ?? null,
-
       resumoDiario: {
-        glicemiaRegistrada: ehHoje(glicemia?.dataHora),
-        insulinaRegistrada: ehHoje(insulina?.dataHora),
+        glicemiaRegistrada: glicemiaHoje,
+        insulinaRegistrada: insulinaHoje,
       },
-
-      glicemiaUltimos7Dias: grafico.map((p) => ({
-        dataHora: p.dataHora,
-        valor: Number(p.valor),
+      glicemiaUltimos7Dias: grafico.map((g) => ({
+        dataHora: g.dataHora,
+        valor: g.valor,
       })),
     };
   }

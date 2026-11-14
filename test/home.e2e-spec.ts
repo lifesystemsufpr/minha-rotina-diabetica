@@ -1,147 +1,119 @@
-import 'dotenv/config';
-import {
-  ExecutionContext,
-  INestApplication,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import type { App } from 'supertest/types';
-import { DataSource } from 'typeorm';
-import { JwtAuthGuard } from '../src/common/guards/jwt-auth.guard';
-import { HomeController } from '../src/modules/home/home.controller';
-import { HomeService } from '../src/modules/home/home.service';
+import { App } from 'supertest/types';
+import { HomeSummaryResponseDto } from '../src/modules/home/dto/home-summary-response.dto';
+import { registerAndLogin } from './utils/auth-helpers';
+import { createTestApp } from './utils/create-test-app';
 
-// Evita o erro de ES Module: o Jest não carrega o @nestjs/passport.
-jest.mock('@nestjs/passport', () => ({
-  AuthGuard: () => class {},
-}));
-
-jest.setTimeout(30000);
-
-// Tipos usados no teste (evitam "any" e os erros do eslint no-unsafe-*)
-interface RequisicaoFake {
-  headers: Record<string, string | undefined>;
-  user?: { id?: string };
+// Datas relativas ao dia local de hoje, para o "hoje" e os "últimos 7 dias"
+// da API baterem com os do teste em qualquer fuso.
+function diaLocal(diasAtras: number, hora: number, segundo = 0): string {
+  const data = new Date();
+  data.setDate(data.getDate() - diasAtras);
+  data.setHours(hora, 0, segundo, 0);
+  return data.toISOString();
 }
 
-interface ResumoBody {
-  nome: string | null;
-  ultimaGlicemia: { id: string; valor: number } | null;
-  ultimaInsulina: { id: string; doseUi: number } | null;
-  proximoLembrete: { id: string; titulo: string } | null;
-  resumoDiario: { glicemiaRegistrada: boolean; insulinaRegistrada: boolean };
-  glicemiaUltimos7Dias: { dataHora: string; valor: number }[];
-}
+describe('Home (e2e)', () => {
+  let app: INestApplication<App>;
+  let tokenA: string;
+  let tokenB: string;
+  let tokenVazio: string;
 
-// Guard de mentira: sem Authorization dá 401. O header x-user define o usuário.
-const fakeGuard = {
-  canActivate: (context: ExecutionContext) => {
-    const req = context.switchToHttp().getRequest<RequisicaoFake>();
-    if (!req.headers.authorization) throw new UnauthorizedException();
-    req.user = { id: req.headers['x-user'] };
-    return true;
-  },
-};
-
-describe('GET /home/summary', () => {
-  let app: INestApplication;
-  let db: DataSource;
-
-  const servidor = () => app.getHttpServer() as App;
-
-  const resumo = (usuario: string) =>
-    request(servidor())
-      .get('/home/summary')
-      .set('Authorization', 'Bearer token')
-      .set('x-user', usuario);
+  const http = () => request(app.getHttpServer());
+  const summary = (token?: string) => {
+    const req = http().get('/api/home/summary');
+    return token ? req.set('Authorization', `Bearer ${token}`) : req;
+  };
+  const post = async (token: string, rota: string, body: object) =>
+    (
+      await http()
+        .post(`/api/${rota}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(body)
+        .expect(201)
+    ).body as { id: string };
 
   beforeAll(async () => {
-    db = new DataSource({
-      type: 'mysql',
-      host: process.env.DATABASE_HOST,
-      port: Number(process.env.DATABASE_PORT),
-      username: process.env.DATABASE_USER,
-      password: process.env.DATABASE_PASSWORD,
-      database: process.env.DATABASE_NAME,
+    app = await createTestApp();
+    tokenA = (await registerAndLogin(app, 'a@home.local', 'Maria')).token;
+    tokenB = (await registerAndLogin(app, 'b@home.local', 'Joana')).token;
+    tokenVazio = (await registerAndLogin(app, 'c@home.local', 'Sem Dados'))
+      .token;
+
+    // Glicemias da A: uma fora do gráfico (10 dias), uma há 2 dias e a de
+    // hoje bem cedo (00:00:30), que é a mais recente.
+    for (const [valor, dataHora] of [
+      [90, diaLocal(10, 12)],
+      [200, diaLocal(2, 12)],
+      [110, diaLocal(0, 0, 30)],
+    ] as const) {
+      await post(tokenA, 'glycemias', { valor, momento: 'JEJUM', dataHora });
+    }
+    // Insulina da A: a última foi ontem, então hoje não houve aplicação.
+    await post(tokenA, 'insulin-applications', {
+      tipo: 'Basal',
+      doseUi: 20,
+      localAplicacao: 'COXA',
+      dataHora: diaLocal(3, 12),
     });
-    await db.initialize();
+    await post(tokenA, 'insulin-applications', {
+      tipo: 'Rápida',
+      doseUi: 8,
+      localAplicacao: 'ABDOMEN',
+      dataHora: diaLocal(1, 12),
+    });
 
-    const moduleRef = await Test.createTestingModule({
-      controllers: [HomeController],
-      providers: [HomeService, { provide: DataSource, useValue: db }],
-    })
-      .overrideGuard(JwtAuthGuard)
-      .useValue(fakeGuard)
-      .compile();
+    // Lembretes da A: o próximo ativo é amanhã às 21h. O de amanhã às 8h
+    // está INATIVO e o de ontem já passou.
+    await post(tokenA, 'reminders', {
+      titulo: 'Insulina da noite',
+      dataHora: diaLocal(-1, 21),
+    });
+    const inativo = await post(tokenA, 'reminders', {
+      titulo: 'Desativado',
+      dataHora: diaLocal(-1, 8),
+    });
+    await http()
+      .patch(`/api/reminders/${inativo.id}/status`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ status: 'INATIVO' })
+      .expect(200);
+    await post(tokenA, 'reminders', {
+      titulo: 'Atrasado',
+      dataHora: diaLocal(1, 8),
+    });
 
-    app = moduleRef.createNestApplication();
-    await app.init();
-
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS lembretes (
-        id         VARCHAR(36)  NOT NULL,
-        usuario_id VARCHAR(36)  NOT NULL,
-        titulo     VARCHAR(255) NOT NULL,
-        data_hora  DATETIME     NOT NULL,
-        status     ENUM('ativo', 'inativo', 'concluido') NOT NULL DEFAULT 'ativo',
-        created_at DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-        updated_at DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-                                ON UPDATE CURRENT_TIMESTAMP(6),
-        PRIMARY KEY (id) )
-    `);
-
-    // limpa os dados antigos (filhos primeiro, por causa das chaves estrangeiras)
-    await db.query("DELETE FROM lembretes WHERE usuario_id LIKE 'home-%'");
-    await db.query("DELETE FROM insulinas WHERE usuario_id LIKE 'home-%'");
-    await db.query("DELETE FROM glicemias WHERE usuario_id LIKE 'home-%'");
-    await db.query("DELETE FROM usuarios WHERE id LIKE 'home-%'");
-
-    // home-1 tem dados, home-2 é outro usuário com dados, home-vazio não tem nada
-    await db.query(`
-      INSERT INTO usuarios (id, nome, email, senha_hash) VALUES
-        ('home-1', 'Maria', 'home1@teste.com', 'hash'),
-        ('home-2', 'Joao', 'home2@teste.com', 'hash'),
-        ('home-vazio', 'Sem Dados', 'homevazio@teste.com', 'hash')
-    `);
-
-    // a de 10 dias fica fora do gráfico; a de agora é a última de home-1
-    await db.query(`
-      INSERT INTO glicemias (id, usuario_id, valor, momento, data_hora) VALUES
-        ('home-g1', 'home-1', 90,  'jejum', NOW() - INTERVAL 10 DAY),
-        ('home-g2', 'home-1', 200, 'jejum', NOW() - INTERVAL 2 DAY),
-        ('home-g3', 'home-1', 110, 'jejum', NOW()),
-        ('home-g4', 'home-2', 300, 'jejum', NOW())
-    `);
-
-    // a última insulina de home-1 foi ontem, então não houve insulina hoje
-    await db.query(`
-      INSERT INTO insulinas (id, usuario_id, tipo, dose_ui, local_aplicacao, data_hora) VALUES
-        ('home-i1', 'home-1', 'rapida', 8,  'abdomen', NOW() - INTERVAL 1 DAY),
-        ('home-i2', 'home-1', 'basal',  20, 'coxa',    NOW() - INTERVAL 3 DAY),
-        ('home-i3', 'home-2', 'mista',  12, 'braco',   NOW())
-    `);
-
-    // l1 é o próximo ativo; l2 é inativo (mais cedo), l3 já passou e l4 é de outro usuário
-    await db.query(`
-      INSERT INTO lembretes (id, usuario_id, titulo, data_hora, status) VALUES
-        ('home-l1', 'home-1', 'Insulina da noite', NOW() + INTERVAL 5 HOUR, 'ativo'),
-        ('home-l2', 'home-1', 'Desativado',        NOW() + INTERVAL 1 HOUR, 'inativo'),
-        ('home-l3', 'home-1', 'Atrasado',          NOW() - INTERVAL 1 HOUR, 'ativo'),
-        ('home-l4', 'home-2', 'Do outro usuario',  NOW() + INTERVAL 1 HOUR, 'ativo')
-    `);
+    // Outra usuária, com registros que não podem aparecer para a A.
+    await post(tokenB, 'glycemias', {
+      valor: 300,
+      momento: 'JEJUM',
+      dataHora: diaLocal(0, 0, 30),
+    });
+    await post(tokenB, 'insulin-applications', {
+      tipo: 'Mista',
+      doseUi: 12,
+      localAplicacao: 'BRACO',
+      dataHora: diaLocal(0, 0, 30),
+    });
+    await post(tokenB, 'reminders', {
+      titulo: 'Da Joana',
+      dataHora: diaLocal(-1, 7),
+    });
   });
 
   afterAll(async () => {
     await app.close();
-    await db.destroy();
   });
 
-  it('usuário sem dados retorna 200 com null e array vazio', async () => {
-    const res = await resumo('home-vazio');
+  it('sem token responde 401', () => summary().expect(401));
 
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({
+  it('usuária sem registros recebe 200 com null, false e lista vazia', async () => {
+    const body = (await summary(tokenVazio).expect(200))
+      .body as HomeSummaryResponseDto;
+
+    expect(body).toEqual({
       nome: 'Sem Dados',
       ultimaGlicemia: null,
       ultimaInsulina: null,
@@ -151,66 +123,64 @@ describe('GET /home/summary', () => {
     });
   });
 
-  it('usuário que não existe no banco também não gera 500', async () => {
-    const res = await resumo('home-nao-existe');
-    const body = res.body as ResumoBody;
+  it('traz a última glicemia e a última insulina da usuária', async () => {
+    const body = (await summary(tokenA).expect(200))
+      .body as HomeSummaryResponseDto;
 
-    expect(res.status).toBe(200);
-    expect(body.nome).toBeNull();
-  });
-
-  it('usuário com dados retorna a última glicemia e a última insulina', async () => {
-    const res = await resumo('home-1');
-    const body = res.body as ResumoBody;
-
-    expect(res.status).toBe(200);
     expect(body.nome).toBe('Maria');
-    expect(body.ultimaGlicemia?.id).toBe('home-g3');
-    expect(body.ultimaGlicemia?.valor).toBe(110);
-    expect(body.ultimaInsulina?.id).toBe('home-i1');
-    expect(body.ultimaInsulina?.doseUi).toBe(8);
+    expect(body.ultimaGlicemia).toMatchObject({ valor: 110, status: 'NORMAL' });
+    expect(body.ultimaInsulina).toMatchObject({ tipo: 'Rápida', doseUi: 8 });
   });
 
-  it('próximo lembrete considera só os ativos que ainda não passaram', async () => {
-    const res = await resumo('home-1');
-    const body = res.body as ResumoBody;
+  it('próximo lembrete: só ATIVO e que ainda não passou', async () => {
+    const body = (await summary(tokenA).expect(200))
+      .body as HomeSummaryResponseDto;
 
-    // ignora o inativo (l2, que seria mais cedo) e o atrasado (l3)
-    expect(body.proximoLembrete?.id).toBe('home-l1');
-    expect(body.proximoLembrete?.titulo).toBe('Insulina da noite');
+    expect(body.proximoLembrete).toMatchObject({
+      titulo: 'Insulina da noite',
+      status: 'ATIVO',
+    });
   });
 
-  it('resumo diário e gráfico dos últimos 7 dias', async () => {
-    const res = await resumo('home-1');
-    const body = res.body as ResumoBody;
+  it('resumo do dia e gráfico dos últimos 7 dias', async () => {
+    const body = (await summary(tokenA).expect(200))
+      .body as HomeSummaryResponseDto;
 
-    // glicemia hoje, insulina não. Só os dois campos: sem alimentação nem exercício
     expect(body.resumoDiario).toEqual({
       glicemiaRegistrada: true,
       insulinaRegistrada: false,
     });
+    // A task pede o resumo só de glicemia e insulina.
     const texto = JSON.stringify(body).toLowerCase();
     expect(texto).not.toContain('aliment');
     expect(texto).not.toContain('exerc');
 
-    // do mais antigo para o mais novo, e a de 10 dias fica fora
-    const valores = body.glicemiaUltimos7Dias.map((p) => p.valor);
-    expect(valores).toEqual([200, 110]);
+    // Do mais antigo para o mais novo; a de 10 dias fica de fora.
+    expect(body.glicemiaUltimos7Dias.map((p) => p.valor)).toEqual([200, 110]);
   });
 
-  it('retorna somente dados do próprio usuário', async () => {
-    const res = await resumo('home-2');
-    const body = res.body as ResumoBody;
+  it('cada usuária vê só os próprios dados', async () => {
+    const body = (await summary(tokenB).expect(200))
+      .body as HomeSummaryResponseDto;
 
+    expect(body.nome).toBe('Joana');
     expect(body.ultimaGlicemia?.valor).toBe(300);
-    expect(body.ultimaInsulina?.id).toBe('home-i3');
-    expect(body.proximoLembrete?.id).toBe('home-l4');
+    expect(body.ultimaInsulina?.tipo).toBe('Mista');
+    expect(body.proximoLembrete?.titulo).toBe('Da Joana');
+    expect(body.resumoDiario).toEqual({
+      glicemiaRegistrada: true,
+      insulinaRegistrada: true,
+    });
     expect(body.glicemiaUltimos7Dias).toHaveLength(1);
   });
 
-  it('sem token retorna 401', async () => {
-    const res = await request(servidor()).get('/home/summary');
-
-    expect(res.status).toBe(401);
+  it('ignora qualquer tentativa de escolher o usuário pela URL', async () => {
+    const body = (
+      await http()
+        .get('/api/home/summary?userId=qualquer&usuarioId=qualquer')
+        .set('Authorization', `Bearer ${tokenB}`)
+        .expect(200)
+    ).body as HomeSummaryResponseDto;
+    expect(body.nome).toBe('Joana');
   });
 });

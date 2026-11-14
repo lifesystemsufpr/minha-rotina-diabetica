@@ -1,52 +1,38 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import { ErrorResponseDto } from '../../common/dto/error-response.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { HomeSummaryResponseDto } from './dto/home-summary-response.dto';
 import { HomeService } from './home.service';
 
 @ApiTags('home')
-@ApiBearerAuth('JWT-auth')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiUnauthorizedResponse({
+  description: 'Token ausente, inválido, expirado ou de conta excluída',
+  type: ErrorResponseDto,
+})
 @Controller('home')
 export class HomeController {
   constructor(private readonly service: HomeService) {}
 
-  @Get('summary') // GET responde 200 por padrão
-  @ApiResponse({
-    status: 200,
-    description: 'Resumo da Home. Sem dados: null e array vazio',
-    schema: {
-      example: {
-        nome: 'Maria',
-        ultimaGlicemia: {
-          id: 'abc',
-          valor: 110,
-          momento: 'jejum',
-          dataHora: '2026-10-12T08:30:00.000Z',
-        },
-
-        ultimaInsulina: {
-          id: 'def',
-          tipo: 'rapida',
-          doseUi: 8,
-          localAplicacao: 'abdomen',
-          dataHora: '2026-10-11T20:00:00.000Z',
-        },
-
-        proximoLembrete: {
-          id: 'ghi',
-          titulo: 'Insulina da noite',
-          dataHora: '2026-10-12T21:00:00.000Z',
-        },
-
-        resumoDiario: { glicemiaRegistrada: true, insulinaRegistrada: false },
-        glicemiaUltimos7Dias: [
-          { dataHora: '2026-10-10T08:00:00.000Z', valor: 200 },
-        ],
-      },
-    },
+  @Get('summary')
+  @ApiOperation({
+    summary: 'Resumo da Home em uma chamada',
+    description:
+      'Nome, última glicemia, última insulina, próximo lembrete ATIVO, resumo do dia e glicemias dos últimos 7 dias. Sem registros, os campos vêm null, false ou [] (nunca 500).',
   })
-  @ApiResponse({ status: 401, description: 'Token ausente ou inválido' })
-  getSummary(@Req() req: { user: { id: string } }) {
-    return this.service.getSummary(req.user.id); // usuário vem do token
+  @ApiOkResponse({ type: HomeSummaryResponseDto })
+  getSummary(
+    @CurrentUser('id') userId: string,
+  ): Promise<HomeSummaryResponseDto> {
+    return this.service.getSummary(userId);
   }
 }
