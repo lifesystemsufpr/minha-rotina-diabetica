@@ -5,9 +5,9 @@ import { IsNotBeforeProperty } from '../decorators/is-not-before-property.decora
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 const DATE_ONLY_MESSAGE = 'deve estar no formato AAAA-MM-DD';
 
-// Filtro por período usado por glicemias e aplicações de insulina.
-// Datas sem hora, no horário do servidor, com os dois extremos inclusivos:
-// endDate=2026-10-13 inclui todo o dia 13.
+// Filtro por período compartilhado pelas rotas de listagem (docs/date-range.md).
+// Datas sem hora, no fuso do processo da API (TZ), com os dois extremos
+// inclusivos: endDate=2026-10-13 inclui todo o dia 13.
 export class DateRangeQueryDto {
   @ApiPropertyOptional({
     example: '2026-10-01',
@@ -20,7 +20,8 @@ export class DateRangeQueryDto {
 
   @ApiPropertyOptional({
     example: '2026-10-13',
-    description: 'Fim do período (AAAA-MM-DD, inclusivo: o dia todo)',
+    description:
+      'Fim do período (AAAA-MM-DD, inclusivo: o dia todo). Não pode ser anterior a startDate.',
   })
   @IsOptional()
   @Matches(DATE_ONLY, { message: `endDate ${DATE_ONLY_MESSAGE}` })

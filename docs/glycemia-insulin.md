@@ -42,8 +42,9 @@ clínicos enquanto a lista não for fechada pela equipe.
   junta os campos de data e hora da tela antes de enviar. A resposta volta
   em UTC (`2026-10-12T11:30:00.000Z`).
 - Filtros `startDate` e `endDate` usam `AAAA-MM-DD` e são **inclusivos**:
-  `endDate=2026-10-13` inclui todo o dia 13. Os limites do dia seguem o
-  horário do servidor.
+  `endDate=2026-10-13` inclui todo o dia 13. `endDate` antes de `startDate`
+  responde 400. Regras completas e fuso horário em
+  [`date-range.md`](date-range.md).
 - O mesmo `DateRangeQueryDto` (`src/common/dto`) serve aos dois módulos.
 
 ## Status da glicemia

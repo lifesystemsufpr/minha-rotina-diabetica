@@ -121,6 +121,16 @@ describe('Aplicações de insulina (e2e)', () => {
 
     it('filtro de data inválido retorna 400', () =>
       api(tokenB).list('?endDate=13-10-2026').expect(400));
+
+    it('endDate anterior a startDate retorna 400 apontando endDate', async () => {
+      const res = await api(tokenB)
+        .list('?startDate=2026-10-13&endDate=2026-10-01')
+        .expect(400);
+      const fields = (res.body as ErrorResponseDto).details?.map(
+        (d) => d.field,
+      );
+      expect(fields).toEqual(['endDate']);
+    });
   });
 
   describe('por ID', () => {
