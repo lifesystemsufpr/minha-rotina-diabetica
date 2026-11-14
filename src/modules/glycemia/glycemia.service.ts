@@ -1,180 +1,99 @@
-import { BadRequestException, Injectable, OnModuleInit, Param , NotFoundException} from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import { DataSource } from 'typeorm';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
+import { dateRangeWhere } from '../../common/utils/date-range';
 import { CreateGlycemiaDto } from './dto/create-glycemia.dto';
-import { GlycemiaStatus } from './enums/glycemia.enums';
+import {
+  GlycemiaResponseDto,
+  toGlycemiaResponse,
+} from './dto/glycemia-response.dto';
 import { ListGlycemiaDto } from './dto/list-glycemia.dto';
 import { UpdateGlycemiaDto } from './dto/update-glycemia.dto';
-
-
-const LIMITE_BAIXA = 70;
-const LIMITE_ALTA = 180;
+import { Glicemia } from './entities/glicemia.entity';
+import { classificarGlicemia } from './utils/classificar-glicemia';
 
 @Injectable()
-export class GlycemiaService implements OnModuleInit {
-  constructor(private readonly dataSource: DataSource) {}
+export class GlycemiaService {
+  constructor(
+    @InjectRepository(Glicemia)
+    private readonly glicemias: Repository<Glicemia>,
+  ) {}
 
-
-  async onModuleInit() {
-    await this.dataSource.query(`
-      CREATE TABLE IF NOT EXISTS glicemias (
-        id         VARCHAR(36)  NOT NULL,
-        usuario_id VARCHAR(36)  NOT NULL,
-        valor      DECIMAL(5,2) NOT NULL,
-        momento    ENUM('jejum', 'antes_refeicao', 'pos_refeicao', 'ao_dormir', 'outro') NOT NULL,
-        status     ENUM('normal', 'alta', 'baixa') NOT NULL,
-        data_hora  DATETIME     NOT NULL,
-        observacao VARCHAR(255) NULL,
-        created_at DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-        updated_at DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-                                ON UPDATE CURRENT_TIMESTAMP(6),
-        PRIMARY KEY (id))`);
+  // O status é calculado e gravado junto (persistido), para relatórios e
+  // dashboard não precisarem recalcular.
+  async create(
+    userId: string,
+    dto: CreateGlycemiaDto,
+  ): Promise<GlycemiaResponseDto> {
+    const salva = await this.glicemias.save(
+      this.glicemias.create({
+        ...dto,
+        dataHora: new Date(dto.dataHora),
+        status: classificarGlicemia(dto.valor),
+        user: { id: userId },
+      }),
+    );
+    return toGlycemiaResponse(salva);
   }
 
+  // Sempre filtrado pelo dono; mais recente primeiro.
+  async findAll(
+    userId: string,
+    filtros: ListGlycemiaDto,
+  ): Promise<GlycemiaResponseDto[]> {
+    const where: FindOptionsWhere<Glicemia> = { user: { id: userId } };
+    const periodo = dateRangeWhere(filtros.startDate, filtros.endDate);
+    if (periodo) where.dataHora = periodo;
+    if (filtros.momento) where.momento = filtros.momento;
 
-    async create(userId: string, dto: CreateGlycemiaDto){
+    const lista = await this.glicemias.find({
+      where,
+      order: { dataHora: 'DESC' },
+    });
+    return lista.map(toGlycemiaResponse);
+  }
 
-    const [dia, mes, ano] = dto.data.split('-').map(Number);
-    const [hora, minuto] = dto.hora.split(':').map(Number);
+  async findOne(userId: string, id: string): Promise<GlycemiaResponseDto> {
+    return toGlycemiaResponse(await this.findOwned(userId, id));
+  }
 
-    const dataHora = new Date(ano, mes - 1, dia, hora, minuto);
-
-
-    if ( dataHora.getFullYear() !== ano || dataHora.getMonth() !== mes - 1 || dataHora.getDate() !== dia || dataHora.getHours() !== hora || dataHora.getMinutes() !== minuto) {
-        throw new BadRequestException('Data ou hora inválida');
+  async update(
+    userId: string,
+    id: string,
+    dto: UpdateGlycemiaDto,
+  ): Promise<GlycemiaResponseDto> {
+    if (Object.keys(dto).length === 0) {
+      throw new BadRequestException('Informe ao menos um campo para atualizar');
     }
+    const glicemia = await this.findOwned(userId, id);
+    Object.assign(glicemia, {
+      ...dto,
+      ...(dto.dataHora ? { dataHora: new Date(dto.dataHora) } : {}),
+      ...(dto.valor !== undefined
+        ? { status: classificarGlicemia(dto.valor) }
+        : {}),
+    });
+    return toGlycemiaResponse(await this.glicemias.save(glicemia));
+  }
 
-  
-    let status: GlycemiaStatus = GlycemiaStatus.NORMAL;
+  // Exclusão física: o projeto não adota soft delete para registros.
+  async remove(userId: string, id: string): Promise<void> {
+    await this.glicemias.remove(await this.findOwned(userId, id));
+  }
 
-    if (dto.valor < LIMITE_BAIXA) {
-        status = GlycemiaStatus.BAIXA;
-    } else if (dto.valor > LIMITE_ALTA) {
-        status = GlycemiaStatus.ALTA;
+  // id + dono: registro de outro usuário é tratado como inexistente (404),
+  // para não revelar que ele existe.
+  private async findOwned(userId: string, id: string): Promise<Glicemia> {
+    const glicemia = await this.glicemias.findOne({
+      where: { id, user: { id: userId } },
+    });
+    if (!glicemia) {
+      throw new NotFoundException('Glicemia não encontrada');
     }
-
-    const id = randomUUID();
-
-    await this.dataSource.query(
-        `INSERT INTO glicemias(id, usuario_id, valor, momento, status, data_hora, observacao)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,[id,userId,dto.valor,dto.momento,status,dataHora,dto.observacao ?? null,] );
-
-    return {id,valor: dto.valor, momento: dto.momento,  status, dataHora,  observacao: dto.observacao ?? null };
-    }
-
-//----------------------------------------------------------------------------------------------------------------------
-
-    
-async findAll(userId: string, filtros: ListGlycemiaDto){
-  let sql = `SELECT id, valor, momento, status, data_hora AS dataHora, observacao FROM glicemias WHERE usuario_id = ?`;
-
-  const params: unknown[] = [userId];
-
-  if (filtros.startDate){
-    const [dia, mes, ano] = filtros.startDate.split('-');
-    const dataInicial = `${ano}-${mes}-${dia} 00:00:00`;
-
-    sql += ' AND data_hora >= ?';
-    params.push(dataInicial);
+    return glicemia;
   }
-
-  if (filtros.endDate){
-    const [dia, mes, ano] = filtros.endDate.split('-');
-    const dataFinal = `${ano}-${mes}-${dia}`;
-
-    sql += ' AND data_hora < DATE_ADD(?, INTERVAL 1 DAY)';
-    params.push(dataFinal);
-  }
-
-  if (filtros.momento){
-    sql += ' AND momento = ?';
-    params.push(filtros.momento);
-  }
-
-  sql += ' ORDER BY data_hora DESC';
-
-  return this.dataSource.query(sql, params);
-}
-
-//----------------------------------------------------------------
-    
-async findOne(userId: string, id: string){
-
-  const linhas = await this.dataSource.query(
-    `SELECT id, valor, momento, status, data_hora AS dataHora, observacao FROM glicemias WHERE id = ? AND usuario_id = ? LIMIT 1`, [id, userId] );
-
-  if (linhas.length === 0) {
-    throw new NotFoundException('Glicemia não encontrada');
-  }
-
-  return linhas[0];
-}
-
-//-------------------------------------------------------------------
-
-
-async update(
-  userId: string,
-  id: string,
-  dto: UpdateGlycemiaDto,
-) {
-  if (Object.keys(dto).length === 0) {
-    throw new BadRequestException('Informe ao menos um campo para atualizar');
-  }
-
-  const linhas: { 
-    id: string;
-    valor: number;
-    momento: string;
-    status: string;
-    data: string;
-    hora: string;
-    observacao: string | null;
-  }[] = await this.dataSource.query(
-    `SELECT id, valor, momento, status, DATE_FORMAT(data_hora, '%d-%m-%Y') AS data, DATE_FORMAT(data_hora, '%H:%i') AS hora,  observacao FROM glicemias WHERE id = ? AND usuario_id = ? LIMIT 1`,[id, userId]);
-
-  if (linhas.length === 0){
-    throw new NotFoundException('Glicemia não encontrada');
-  }
-
-  const atual = linhas[0];
-  const valor = dto.valor ?? atual.valor;
-  const momento = dto.momento ?? atual.momento;
-  const data = dto.data ?? atual.data;
-  const hora = dto.hora ?? atual.hora;
-  const observacao = dto.observacao;
-
-  const [dia, mes, ano] = data.split('-');
-  const dataHora = `${ano}-${mes}-${dia} ${hora}:00`;
-
-  let status = atual.status;
-
-  if (dto.valor !== undefined){
-
-    if (valor < 70) {
-      status = 'baixa';
-    } else if (valor > 180) {
-      status = 'alta';
-    } else {
-      status = 'normal';
-    }
-  }
-
-  await this.dataSource.query(`UPDATE glicemias SET valor = ?, momento = ?, data_hora = ?, status = ?, observacao = COALESCE(?, observacao), updated_at = CURRENT_TIMESTAMP(6) WHERE id = ? AND usuario_id = ?`,[valor, momento, dataHora,  status,  observacao === undefined ? null : observacao,  id,  userId]);
-
-  return this.findOne(userId, id);
-}
-
-//--------------------------------------------------------------------------------------------------------------------------------
-
-async remove(userId: string, id: string){
-  const linhas = await this.dataSource.query('SELECT id FROM glicemias WHERE id = ? AND usuario_id = ?', [id, userId]);
-
-  if (linhas.length === 0) {
-    throw new NotFoundException('Glicemia não encontrada');
-  }
-
-  await this.dataSource.query('DELETE FROM glicemias WHERE id = ? AND usuario_id = ?',[id, userId]);
-}
-
 }

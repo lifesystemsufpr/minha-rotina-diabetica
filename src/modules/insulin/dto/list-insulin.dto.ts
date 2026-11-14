@@ -1,20 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsOptional } from 'class-validator';
-import { InsulinType } from '../enums/insulin.enums';
+import { Transform } from 'class-transformer';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { DateRangeQueryDto } from '../../../common/dto/date-range-query.dto';
+import { trim } from '../../../common/transformers/string.transformers';
 
-export class ListInsulinDto {
-  @ApiPropertyOptional()
+export class ListInsulinDto extends DateRangeQueryDto {
+  @ApiPropertyOptional({ example: 'Rápida' })
   @IsOptional()
-  @IsDateString()
-  startDate?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsDateString()
-  endDate?: string;
-
-  @ApiPropertyOptional({ enum: InsulinType })
-  @IsOptional()
-  @IsEnum(InsulinType)
-  tipo?: InsulinType;
+  @Transform(trim)
+  @IsString()
+  @MaxLength(50)
+  tipo?: string;
 }
