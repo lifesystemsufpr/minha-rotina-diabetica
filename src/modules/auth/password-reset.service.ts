@@ -59,11 +59,14 @@ export class PasswordResetService {
     // Falha de envio é só logada (a resposta ao cliente continua genérica).
     void this.mailer
       .sendPasswordReset({ to: user.email, nome: user.nome, token, expiresAt })
-      .catch(() =>
+      .catch((err: unknown) => {
+        // Só o código do erro (ex.: EAUTH, ECONNECTION): a mensagem completa
+        // do SMTP pode conter o e-mail do destinatário.
+        const code = (err as { code?: unknown } | null)?.code;
         this.logger.error(
-          'Falha ao enviar e-mail de recuperação. Verifique a configuração e a disponibilidade do SMTP.',
-        ),
-      );
+          `Falha ao enviar e-mail de recuperação (código: ${typeof code === 'string' ? code : 'desconhecido'}). Verifique a configuração e a disponibilidade do SMTP.`,
+        );
+      });
   }
 
   async resetPassword(token: string, novaSenha: string): Promise<void> {
