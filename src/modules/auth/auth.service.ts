@@ -27,7 +27,6 @@ export class AuthService {
       email: dto.email,
       senhaHash,
       // Dados de saúde são opcionais no cadastro (2ª etapa: PATCH /profile).
-      // contatoEmergencia é descontinuado e ignorado de propósito.
       perfil: {
         dataNascimento: dto.dataNascimento,
         tipoDiabetes: dto.tipoDiabetes,

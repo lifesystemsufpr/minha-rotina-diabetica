@@ -4,9 +4,10 @@ Roteiro para publicar uma versão que tem migration, com volta garantida se
 algo der errado. Ele foi ensaiado em nov/2026 no MariaDB 10.4, com a migration
 `RemoveContatoEmergencia`: backup, deploy, restauração e conferência dos dados.
 
-A migration do ensaio está fora da `development` até a confirmação (#48). O
-roteiro vale para ela e para qualquer outra migration que apague ou altere
-dados.
+O roteiro vale para qualquer migration que apague ou altere dados. A próxima é
+a `RemoveContatoEmergenciaComCopia`, que tira o contato de emergência de
+`perfis` e guarda uma cópia na tabela `perfis_contato_emergencia_backup`. Mesmo
+com essa cópia, faça o backup completo antes do deploy.
 
 Quem roda é quem tem acesso ao servidor do banco. O repositório não guarda
 endereço nem senha de produção, e eles não devem ir para o Git.
@@ -98,8 +99,24 @@ Há dois caminhos. Use o primeiro sempre que os dados importarem.
 npm run migration:revert
 ```
 
-Desfaz a última migration. No caso da `RemoveContatoEmergencia`, as colunas de
-contato voltam **vazias**: o conteúdo apagado só volta pelo backup.
+Desfaz a última migration. No caso da `RemoveContatoEmergenciaComCopia`, as
+colunas de contato voltam **com os dados**, copiados da tabela
+`perfis_contato_emergencia_backup`, e a tabela é apagada. A migration antiga
+`RemoveContatoEmergencia` (que não está mais no repositório) devolvia as
+colunas vazias.
+
+## Depois de confirmar a remoção do contato
+
+A tabela `perfis_contato_emergencia_backup` guarda dados pessoais que o produto
+não usa mais. Quando a versão estiver confirmada em produção e não houver mais
+chance de voltar, apague a tabela:
+
+```bash
+mysql -h HOST -P PORTA -u USUARIO -p -e "DROP TABLE BANCO.perfis_contato_emergencia_backup;"
+```
+
+Até lá, a exclusão de conta apaga a linha de quem excluir a conta. Depois de
+apagar a tabela, o `migration:revert` dessa migration recria as colunas vazias.
 
 ## Como o ensaio foi feito
 

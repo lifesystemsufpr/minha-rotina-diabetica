@@ -38,8 +38,6 @@ describe('AuthService', () => {
       tipoDiabetes: TipoDiabetes.TIPO_2,
       alturaCm: 170.5,
       pesoKg: 68.3,
-      // Descontinuado: aceito pelo DTO, mas não pode chegar ao UsersService.
-      contatoEmergencia: { nome: 'João', relacao: 'Pai', telefone: '419' },
     };
 
     it('repassa só o hash (nunca a senha nem confirmarSenha) ao UsersService', async () => {

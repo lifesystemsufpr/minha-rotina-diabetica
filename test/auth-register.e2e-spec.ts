@@ -80,7 +80,7 @@ describe('POST /auth/register (e2e)', () => {
     });
   });
 
-  it('contatoEmergencia (descontinuado) é aceito e ignorado', async () => {
+  it('contatoEmergencia não existe mais: o cadastro com o campo é recusado', async () => {
     const res = await post(
       validRegisterPayload({
         email: 'contato-legado@example.com',
@@ -90,8 +90,10 @@ describe('POST /auth/register (e2e)', () => {
           telefone: '(41) 99999-9999',
         },
       }),
-    ).expect(201);
-    expect(JSON.stringify(res.body)).not.toContain('João Silva');
+    ).expect(400);
+    expect(
+      (res.body as ErrorResponseDto).details?.map((d) => d.field),
+    ).toContain('contatoEmergencia');
   });
 
   it('normaliza o e-mail (maiúsculas e espaços)', async () => {

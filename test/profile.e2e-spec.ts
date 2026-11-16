@@ -82,13 +82,12 @@ describe('Profile (e2e)', () => {
     expect(body.alturaCm).toBe(170.5);
   });
 
-  it('PATCH aceita e ignora contatoEmergencia (descontinuado)', async () => {
-    const body = (
-      await patch(tokenA, {
-        contatoEmergencia: { nome: 'Carla Souza', relacao: 'Mãe' },
-      }).expect(200)
-    ).body as ProfileResponseDto;
-    expect(JSON.stringify(body)).not.toContain('Carla');
+  it('PATCH com contatoEmergencia é recusado (o campo não existe mais)', async () => {
+    const res = await patch(tokenA, {
+      contatoEmergencia: { nome: 'Carla Souza', relacao: 'Mãe' },
+    }).expect(400);
+    const fields = (res.body as ErrorResponseDto).details?.map((d) => d.field);
+    expect(fields).toContain('contatoEmergencia');
   });
 
   it('PATCH com dado inválido retorna 400 com details', async () => {
