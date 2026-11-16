@@ -33,6 +33,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Tipos, incluindo os testes
+        run: npm run typecheck
+
       - name: Testes unitários
         run: npm test
 
