@@ -38,7 +38,7 @@ export class HomeSummaryResponseDto {
     type: GlycemiaResponseDto,
     nullable: true,
     description:
-      'Glicemia mais recente até agora (data futura não conta). null se não houver.',
+      'Glicemia mais recente até agora (data futura não conta), incluindo status por momento e hipoglicemiaNivel2. null se não houver.',
   })
   ultimaGlicemia!: GlycemiaResponseDto | null;
 

@@ -4,7 +4,6 @@ import { Transform } from 'class-transformer';
 import {
   IsDateString,
   IsEnum,
-  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsPositive,
@@ -12,18 +11,22 @@ import {
   Max,
   MaxLength,
 } from 'class-validator';
-import { trim } from '../../../common/transformers/string.transformers';
 import { LocalAplicacao } from '../enums/local-aplicacao.enum';
+import {
+  normalizarTipoInsulina,
+  TipoInsulina,
+} from '../enums/tipo-insulina.enum';
 
 export class CreateInsulinDto {
-  // A lista de tipos ainda não foi fechada (task "[BACK][INSULINA] Criar
-  // entidade e DTOs"): texto livre até existir um conjunto aprovado.
-  @ApiProperty({ example: 'Rápida', maxLength: 50 })
-  @Transform(trim)
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(50)
-  tipo!: string;
+  @ApiProperty({
+    enum: TipoInsulina,
+    example: TipoInsulina.ULTRARRAPIDA,
+    description:
+      'Código do tipo de insulina. Rótulos antigos do app (Rápida, Regular, NPH, Longa duração) também são aceitos e convertidos para o código correspondente.',
+  })
+  @Transform(normalizarTipoInsulina)
+  @IsEnum(TipoInsulina)
+  tipo!: TipoInsulina;
 
   // decimal(6,2) no banco: até 9999,99
   @ApiProperty({ example: 10, description: 'Dose em UI (maior que zero)' })

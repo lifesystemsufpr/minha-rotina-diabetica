@@ -5,6 +5,8 @@ import { App } from 'supertest/types';
 import { DataSource } from 'typeorm';
 import { Glicemia } from '../src/modules/glycemia/entities/glicemia.entity';
 import { MomentoGlicemia } from '../src/modules/glycemia/enums/momento-glicemia.enum';
+import { InsulinaTipoBackup } from '../src/modules/insulin/entities/insulina-tipo-backup.entity';
+import { Insulina } from '../src/modules/insulin/entities/insulina.entity';
 import { Perfil } from '../src/modules/users/entities/perfil.entity';
 import { ContatoEmergenciaBackup } from '../src/modules/users/entities/contato-emergencia-backup.entity';
 import { User } from '../src/modules/users/entities/user.entity';
@@ -33,6 +35,28 @@ describe('Exclusão de conta (e2e)', () => {
       momento: MomentoGlicemia.JEJUM,
       dataHora: new Date('2026-10-01T08:00:00.000Z'),
     });
+    const insulinaUsuario = await db.getRepository(Insulina).save({
+      user: { id: userId },
+      tipo: 'ULTRARRAPIDA',
+      doseUi: 10,
+      dataHora: new Date('2026-10-01T08:30:00.000Z'),
+    });
+    await db.getRepository(InsulinaTipoBackup).save([
+      {
+        insulinaId: insulinaUsuario.id,
+        tipoOriginal: 'Rápida',
+      },
+      {
+        insulinaId: 'insulina-de-outra-pessoa',
+        tipoOriginal: 'NPH',
+      },
+    ]);
+    await db
+      .getRepository(User)
+      .update(
+        { id: userId },
+        { termosVersao: '2026-11-16', termosAceitosEm: new Date() },
+      );
     // Contatos copiados pela migration que tirou o contato de emergência.
     await db.getRepository(ContatoEmergenciaBackup).save([
       {
@@ -84,15 +108,24 @@ describe('Exclusão de conta (e2e)', () => {
         .getCount();
     expect(await qtd(Perfil)).toBe(0);
     expect(await qtd(Glicemia)).toBe(0);
-    // LGPD: a cópia do contato de emergência também é apagada.
+    // LGPD: a cópia do contato de emergência e a cópia do tipo de insulina
+    // também são apagadas.
     const backup = db.getRepository(ContatoEmergenciaBackup);
     expect(await backup.countBy({ usuarioId: userId })).toBe(0);
     expect(await backup.countBy({ usuarioId: 'outra-pessoa' })).toBe(1);
+
+    const insulinaBackup = db.getRepository(InsulinaTipoBackup);
+    expect(await insulinaBackup.count()).toBe(1);
+    expect(
+      await insulinaBackup.countBy({ insulinaId: 'insulina-de-outra-pessoa' }),
+    ).toBe(1);
 
     const user = await db.getRepository(User).findOneByOrFail({ id: userId });
     expect(user.ativo).toBe(false);
     expect(user.nome).not.toBe('Pessoa Excluída');
     expect(user.email).not.toBe(email);
+    expect(user.termosVersao).toBeNull();
+    expect(user.termosAceitosEm).toBeNull();
   });
 
   it('o e-mail fica livre para um novo cadastro', () =>
@@ -107,8 +140,9 @@ describe('Exclusão de conta (e2e)', () => {
       .set('Authorization', `Bearer ${tokenOutro}`)
       .expect(200));
 
-  it('continua funcionando depois de apagada a tabela de cópia do contato', async () => {
+  it('continua funcionando depois de apagadas as tabelas de cópia', async () => {
     await db.query('DROP TABLE perfis_contato_emergencia_backup');
+    await db.query('DROP TABLE insulinas_tipo_backup');
     await request(app.getHttpServer())
       .delete('/api/users/me')
       .set('Authorization', `Bearer ${tokenOutro}`)

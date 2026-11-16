@@ -19,8 +19,8 @@ export class Insulina {
   @Column({ name: 'data_hora', type: 'datetime' })
   dataHora: Date;
 
-  // A lista de tipos de insulina ainda não foi fechada pela equipe;
-  // fica como texto até existir um conjunto aprovado.
+  // Guarda o código de TipoInsulina; fica como varchar(50) para registros
+  // antigos sem correspondência na migração manterem o texto original.
   @Column({ type: 'varchar', length: 50 })
   tipo: string;
 

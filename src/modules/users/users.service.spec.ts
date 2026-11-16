@@ -187,6 +187,27 @@ describe('UsersService', () => {
       expect(result).not.toHaveProperty('senhaHash');
     });
 
+    it('grava termosVersao e termosAceitosEm quando versaoTermos é informada', async () => {
+      repo.existsBy.mockResolvedValue(false);
+      manager.save
+        .mockResolvedValueOnce({ ...savedUser })
+        .mockResolvedValueOnce(savedPerfil);
+
+      await service.create({ ...data, versaoTermos: '2026-11-16' });
+
+      expect(manager.create).toHaveBeenNthCalledWith(
+        1,
+        User,
+        expect.objectContaining({
+          nome: 'Maria Silva',
+          email: 'maria@example.com',
+          senhaHash: 'hash-secreto',
+          termosVersao: '2026-11-16',
+          termosAceitosEm: expect.any(Date) as unknown,
+        }),
+      );
+    });
+
     it('lança EmailAlreadyExistsException se o e-mail já existe', async () => {
       repo.existsBy.mockResolvedValue(true);
       await expect(service.create(data)).rejects.toBeInstanceOf(

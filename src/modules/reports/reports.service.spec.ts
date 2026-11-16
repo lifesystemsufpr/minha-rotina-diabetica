@@ -22,6 +22,7 @@ describe('ReportsService', () => {
     valor: 110,
     momento: Object.values(MomentoGlicemia)[0],
     status: Object.values(StatusGlicemia)[0],
+    hipoglicemiaNivel2: false,
     dataHora: new Date(dataHora),
     observacao: null,
   });

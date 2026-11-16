@@ -52,20 +52,45 @@ describe('Glicemias (e2e)', () => {
       expect(body.id).toEqual(expect.any(String));
       expect(body.valor).toBe(110);
       expect(body.status).toBe('NORMAL');
+      expect(body.hipoglicemiaNivel2).toBe(false);
       expect(new Date(body.dataHora).toISOString()).toBe(
         '2026-10-12T11:30:00.000Z',
       );
     });
 
     it.each([
-      [69, 'BAIXA'],
-      [181, 'ALTA'],
-    ])('valor %s mg/dL fica com status %s', async (valor, status) => {
-      const res = await api(tokenA)
-        .post({ ...medicao, valor })
-        .expect(201);
-      expect((res.body as GlycemiaResponseDto).status).toBe(status);
-    });
+      [69, 'JEJUM', 'BAIXA'],
+      [130, 'JEJUM', 'NORMAL'],
+      [131, 'JEJUM', 'ALTA'],
+      [150, 'JEJUM', 'ALTA'],
+      [150, 'ANTES_ALMOCO', 'ALTA'],
+      [150, 'APOS_ALMOCO', 'NORMAL'],
+      [180, 'APOS_ALMOCO', 'NORMAL'],
+      [181, 'APOS_ALMOCO', 'ALTA'],
+    ])(
+      'valor %s mg/dL em %s fica com status %s',
+      async (valor, momento, status) => {
+        const res = await api(tokenA)
+          .post({ ...medicao, valor, momento })
+          .expect(201);
+        expect((res.body as GlycemiaResponseDto).status).toBe(status);
+      },
+    );
+
+    it.each([
+      [53, true],
+      [54, false],
+    ])(
+      'hipoglicemiaNivel2 para %s mg/dL retorna %s',
+      async (valor, esperado) => {
+        const res = await api(tokenA)
+          .post({ ...medicao, valor })
+          .expect(201);
+        const body = res.body as GlycemiaResponseDto;
+        expect(body.hipoglicemiaNivel2).toBe(esperado);
+        expect(body.status).toBe('BAIXA');
+      },
+    );
 
     it('sem token retorna 401', () => api().post(medicao).expect(401));
 
@@ -175,7 +200,17 @@ describe('Glicemias (e2e)', () => {
       await api(tokenA).get('nao-e-uuid').expect(400);
     });
 
-    it('PATCH recalcula o status e mantém os outros campos', async () => {
+    it('PATCH recalcula o status quando valor ou momento mudam e mantém os outros campos', async () => {
+      const resMomento = await api(tokenA)
+        .patch(idA, { valor: 150, momento: 'APOS_ALMOCO' })
+        .expect(200);
+      expect((resMomento.body as GlycemiaResponseDto).status).toBe('NORMAL');
+
+      const resJejum = await api(tokenA)
+        .patch(idA, { momento: 'JEJUM' })
+        .expect(200);
+      expect((resJejum.body as GlycemiaResponseDto).status).toBe('ALTA');
+
       const res = await api(tokenA).patch(idA, { valor: 250 }).expect(200);
       const body = res.body as GlycemiaResponseDto;
       expect(body.status).toBe('ALTA');

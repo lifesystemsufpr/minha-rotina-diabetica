@@ -39,7 +39,7 @@ describe('Relatórios: histórico consolidado (e2e)', () => {
       dataHora: '2026-10-05T12:00:00Z',
     });
     await post(tokenA, 'insulin-applications', {
-      tipo: 'Basal',
+      tipo: 'LONGA',
       doseUi: 12,
       localAplicacao: 'COXA',
       dataHora: '2026-10-05T12:30:00Z',
@@ -84,7 +84,7 @@ describe('Relatórios: histórico consolidado (e2e)', () => {
     expect(body[1]).toMatchObject({
       glycemia: null,
       insulin: {
-        tipo: 'Basal',
+        tipo: 'LONGA',
         doseUi: 12,
         localAplicacao: 'COXA',
         observacao: null,

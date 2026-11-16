@@ -63,6 +63,51 @@ describe('POST /auth/register (e2e)', () => {
     expect(perfil.pesoKg).toBe(68.3);
   });
 
+  it('cadastro com versaoTermos correta retorna 201 e grava versão e data/hora do aceite', async () => {
+    const antes = Date.now();
+    await post(
+      validRegisterPayload({
+        email: 'com-termos@example.com',
+        versaoTermos: '2026-11-16',
+      }),
+    ).expect(201);
+    const depois = Date.now();
+
+    const user = await dataSource.getRepository(User).findOneOrFail({
+      where: { email: 'com-termos@example.com' },
+    });
+    expect(user.termosVersao).toBe('2026-11-16');
+    expect(user.termosAceitosEm).toBeInstanceOf(Date);
+    expect(user.termosAceitosEm?.getTime()).toBeGreaterThanOrEqual(
+      antes - 1000,
+    );
+    expect(user.termosAceitosEm?.getTime()).toBeLessThanOrEqual(depois + 1000);
+  });
+
+  it('cadastro sem versaoTermos retorna 201 com campos de termos nulos (compatibilidade com app antigo)', async () => {
+    await post(
+      validRegisterPayload({ email: 'sem-termos@example.com' }),
+    ).expect(201);
+
+    const user = await dataSource.getRepository(User).findOneOrFail({
+      where: { email: 'sem-termos@example.com' },
+    });
+    expect(user.termosVersao).toBeNull();
+    expect(user.termosAceitosEm).toBeNull();
+  });
+
+  it('cadastro com versaoTermos diferente da atual retorna 400 apontando versaoTermos', async () => {
+    const res = await post(
+      validRegisterPayload({
+        email: 'termos-errados@example.com',
+        versaoTermos: '2025-01-01',
+      }),
+    ).expect(400);
+    expect(
+      (res.body as ErrorResponseDto).details?.map((d) => d.field),
+    ).toContain('versaoTermos');
+  });
+
   it('1ª etapa: só nome, e-mail e senha cria a conta com perfil incompleto', async () => {
     const res = await post({
       nome: 'Só Básico',

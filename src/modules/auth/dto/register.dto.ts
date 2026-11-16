@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
+  Equals,
   IsEmail,
   IsNotEmpty,
   IsOptional,
@@ -17,6 +18,7 @@ import {
 } from '../../../common/transformers/string.transformers';
 import { ProfileFieldsDto } from '../../profile/dto/profile-fields.dto';
 import { PASSWORD_PATTERN, PASSWORD_PATTERN_MESSAGE } from '../password-policy';
+import { VERSAO_ATUAL_TERMOS } from '../terms-policy';
 // Cadastro em duas etapas (nov/2026):
 // 1. POST /auth/register só exige nome, e-mail e senha.
 // 2. PATCH /profile completa os dados de saúde. Até lá, a conta só acessa
@@ -57,4 +59,17 @@ export class RegisterDto extends PartialType(ProfileFieldsDto) {
     message: 'confirmarSenha deve ser igual a senha',
   })
   confirmarSenha?: string;
+
+  @ApiPropertyOptional({
+    example: VERSAO_ATUAL_TERMOS,
+    description:
+      'Versão dos Termos de Uso e da Política de Privacidade aceitos no cadastro (deve ser igual à versão vigente)',
+  })
+  @Transform(trim)
+  @IsOptional()
+  @IsString()
+  @Equals(VERSAO_ATUAL_TERMOS, {
+    message: `versaoTermos deve ser igual a ${VERSAO_ATUAL_TERMOS}`,
+  })
+  versaoTermos?: string;
 }

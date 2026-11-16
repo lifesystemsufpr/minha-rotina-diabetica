@@ -8,7 +8,7 @@ import { registerAndLogin } from './utils/auth-helpers';
 import { createTestApp } from './utils/create-test-app';
 
 const aplicacao = {
-  tipo: 'Rápida',
+  tipo: 'ULTRARRAPIDA',
   doseUi: 10,
   localAplicacao: 'ABDOMEN',
   dataHora: '2026-10-12T08:30:00-03:00',
@@ -48,13 +48,49 @@ describe('Aplicações de insulina (e2e)', () => {
   });
 
   describe('POST /insulin-applications', () => {
-    it('registro válido retorna 201', async () => {
+    it('registro válido com código retorna 201', async () => {
       const res = await api(tokenA).post(aplicacao).expect(201);
       const body = res.body as InsulinResponseDto;
       expect(body.id).toEqual(expect.any(String));
+      expect(body.tipo).toBe('ULTRARRAPIDA');
       expect(body.doseUi).toBe(10);
       expect(body.localAplicacao).toBe('ABDOMEN');
     });
+
+    it('aceita todos os códigos da lista fechada de insulina', async () => {
+      for (const tipo of [
+        'ULTRARRAPIDA',
+        'RAPIDA',
+        'INTERMEDIARIA',
+        'LONGA',
+        'ULTRALONGA',
+        'PRE_MISTURADA',
+      ]) {
+        const res = await api(tokenA)
+          .post({ ...aplicacao, tipo })
+          .expect(201);
+        expect((res.body as InsulinResponseDto).tipo).toBe(tipo);
+      }
+    });
+
+    it.each([
+      ['Rápida', 'ULTRARRAPIDA'],
+      ['  rápida ', 'ULTRARRAPIDA'],
+      ['Regular', 'RAPIDA'],
+      ['regular', 'RAPIDA'],
+      ['NPH', 'INTERMEDIARIA'],
+      [' nph ', 'INTERMEDIARIA'],
+      ['Longa duração', 'LONGA'],
+      ['longa duração', 'LONGA'],
+    ])(
+      'converte o rótulo antigo %s para o código %s (201)',
+      async (rotuloAntigo, codigoEsperado) => {
+        const res = await api(tokenA)
+          .post({ ...aplicacao, tipo: rotuloAntigo })
+          .expect(201);
+        expect((res.body as InsulinResponseDto).tipo).toBe(codigoEsperado);
+      },
+    );
 
     it('aceita todos os locais do protótipo', async () => {
       for (const localAplicacao of ['ABDOMEN', 'BRACO', 'COXA', 'GLUTEO']) {
@@ -72,6 +108,7 @@ describe('Aplicações de insulina (e2e)', () => {
       ['dose como texto', { doseUi: 'dez' }, 'doseUi'],
       ['local fora da lista', { localAplicacao: 'outro' }, 'localAplicacao'],
       ['tipo vazio', { tipo: '' }, 'tipo'],
+      ['tipo fora da lista', { tipo: 'Basal' }, 'tipo'],
       ['data inválida', { dataHora: '12-10-2026T08:30:00.000Z' }, 'dataHora'],
       [
         'data e hora no futuro',
@@ -97,7 +134,7 @@ describe('Aplicações de insulina (e2e)', () => {
 
     it('lista só os registros do dono, do mais recente para o mais antigo', async () => {
       await api(tokenB)
-        .post({ ...aplicacao, tipo: 'Basal', dataHora: '2026-10-01T22:00:00Z' })
+        .post({ ...aplicacao, tipo: 'LONGA', dataHora: '2026-10-01T22:00:00Z' })
         .expect(201);
       await api(tokenB)
         .post({ ...aplicacao, dataHora: '2026-10-05T12:00:00Z' })
@@ -111,7 +148,7 @@ describe('Aplicações de insulina (e2e)', () => {
       );
     });
 
-    it('filtra por período (dias inteiros) e tipo', async () => {
+    it('filtra por período (dias inteiros) e tipo (código)', async () => {
       const periodo = (
         await api(tokenB)
           .list('?startDate=2026-10-05&endDate=2026-10-05')
@@ -119,13 +156,15 @@ describe('Aplicações de insulina (e2e)', () => {
       ).body as InsulinResponseDto[];
       expect(periodo).toHaveLength(1);
 
-      const basal = (await api(tokenB).list('?tipo=Basal').expect(200))
+      const longa = (await api(tokenB).list('?tipo=LONGA').expect(200))
         .body as InsulinResponseDto[];
-      expect(basal.map((i) => i.tipo)).toEqual(['Basal']);
+      expect(longa.map((i) => i.tipo)).toEqual(['LONGA']);
     });
 
-    it('filtro de data inválido retorna 400', () =>
-      api(tokenB).list('?endDate=13-10-2026').expect(400));
+    it('filtro de data ou tipo inválido retorna 400', async () => {
+      await api(tokenB).list('?endDate=13-10-2026').expect(400);
+      await api(tokenB).list('?tipo=INVALIDA').expect(400);
+    });
 
     it('endDate anterior a startDate retorna 400 apontando endDate', async () => {
       const res = await api(tokenB)
@@ -161,11 +200,14 @@ describe('Aplicações de insulina (e2e)', () => {
       await api(tokenA).get('insulina-teste-1').expect(400);
     });
 
-    it('PATCH altera só os campos enviados', async () => {
+    it('PATCH altera só os campos enviados e aceita rótulo antigo', async () => {
       const res = await api(tokenA).patch(idA, { doseUi: 12.5 }).expect(200);
       const body = res.body as InsulinResponseDto;
       expect(body.doseUi).toBe(12.5);
-      expect(body.tipo).toBe('Rápida');
+      expect(body.tipo).toBe('ULTRARRAPIDA');
+
+      const resTipo = await api(tokenA).patch(idA, { tipo: 'NPH' }).expect(200);
+      expect((resTipo.body as InsulinResponseDto).tipo).toBe('INTERMEDIARIA');
     });
 
     it('PATCH inválido retorna 400', async () => {
