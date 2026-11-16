@@ -2,8 +2,10 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEnum, IsOptional } from 'class-validator';
 import { DateRangeQueryDto } from '../../../common/dto/date-range-query.dto';
-import { trim } from '../../../common/transformers/string.transformers';
-import { TipoInsulina } from '../enums/tipo-insulina.enum';
+import {
+  normalizarTipoInsulina,
+  TipoInsulina,
+} from '../enums/tipo-insulina.enum';
 
 export class ListInsulinDto extends DateRangeQueryDto {
   @ApiPropertyOptional({
@@ -11,7 +13,8 @@ export class ListInsulinDto extends DateRangeQueryDto {
     example: TipoInsulina.ULTRARRAPIDA,
   })
   @IsOptional()
-  @Transform(trim)
+  // Aceita também os rótulos do app antigo (ex.: ?tipo=NPH), como na escrita.
+  @Transform(normalizarTipoInsulina)
   @IsEnum(TipoInsulina)
   tipo?: TipoInsulina;
 }

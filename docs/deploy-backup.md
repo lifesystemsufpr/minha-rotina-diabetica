@@ -15,7 +15,11 @@ deploy rodam:
 - `PadronizaTipoInsulinaComCopia`: guarda o `tipo` original de todas as linhas
   de `insulinas` em `insulinas_tipo_backup` e converte os rótulos antigos para
   os códigos de `TipoInsulina` (o `down` restaura a partir da cópia e apaga a
-  tabela);
+  tabela). Quando a pessoa exclui uma aplicação ou troca o tipo dela, a linha
+  sai da cópia: dado excluído não fica guardado, e o `down` não desfaz a
+  edição. Textos que não batem com a lista (ex.: "Lantus") ficam como estão.
+  Ensaiado no MariaDB com rótulos antigos, texto livre, `revert` e nova
+  execução depois de parada no meio;
 - `AddTermosAceiteToUsuarios`: adiciona `termos_versao` e `termos_aceitos_em`
   em `usuarios`.
 

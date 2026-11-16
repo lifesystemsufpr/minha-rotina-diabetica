@@ -4,6 +4,8 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { ErrorResponseDto } from '../src/common/dto/error-response.dto';
 import { InsulinResponseDto } from '../src/modules/insulin/dto/insulin-response.dto';
+import { DataSource } from 'typeorm';
+import { InsulinaTipoBackup } from '../src/modules/insulin/entities/insulina-tipo-backup.entity';
 import { registerAndLogin } from './utils/auth-helpers';
 import { createTestApp } from './utils/create-test-app';
 
@@ -225,6 +227,41 @@ describe('Aplicações de insulina (e2e)', () => {
     it('DELETE do próprio registro retorna 204 e ele some', async () => {
       await api(tokenA).del(idA).expect(204);
       await api(tokenA).get(idA).expect(404);
+    });
+  });
+
+  describe('cópia do tipo original (migration PadronizaTipoInsulinaComCopia)', () => {
+    const criar = async () =>
+      (
+        (await api(tokenA).post(aplicacao).expect(201))
+          .body as InsulinResponseDto
+      ).id;
+    const copias = () => app.get(DataSource).getRepository(InsulinaTipoBackup);
+
+    it('o filtro aceita o rótulo antigo (?tipo=NPH)', async () => {
+      await api(tokenA)
+        .post({ ...aplicacao, tipo: 'INTERMEDIARIA' })
+        .expect(201);
+      const res = await api(tokenA).list('?tipo=NPH').expect(200);
+      const lista = res.body as InsulinResponseDto[];
+      expect(lista.length).toBeGreaterThan(0);
+      expect(lista.every((i) => i.tipo === 'INTERMEDIARIA')).toBe(true);
+    });
+
+    it('excluir a aplicação apaga a cópia do tipo', async () => {
+      const id = await criar();
+      await copias().save({ insulinaId: id, tipoOriginal: 'Rápida' });
+      await api(tokenA).del(id).expect(204);
+      expect(await copias().countBy({ insulinaId: id })).toBe(0);
+    });
+
+    it('editar o tipo apaga a cópia; editar outro campo mantém', async () => {
+      const id = await criar();
+      await copias().save({ insulinaId: id, tipoOriginal: 'Rápida' });
+      await api(tokenA).patch(id, { doseUi: 7 }).expect(200);
+      expect(await copias().countBy({ insulinaId: id })).toBe(1);
+      await api(tokenA).patch(id, { tipo: 'LONGA' }).expect(200);
+      expect(await copias().countBy({ insulinaId: id })).toBe(0);
     });
   });
 });
