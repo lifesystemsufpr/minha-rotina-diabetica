@@ -23,7 +23,7 @@ Para a tela mostrar "últimos 7 dias" ou "este mês", o app envia o período.
     { "valor": 100, "dataHora": "2026-10-05T12:00:00.000Z", "momento": "JEJUM" }
   ],
   "insulinaTotalDiaria": [
-    { "data": "2026-10-05", "totalUi": 14.5 }
+    { "data": "2026-10-05", "totalUi": 14.5, "quantidade": 2 }
   ],
   "distribuicaoLeituras": {
     "total": 3,
@@ -44,7 +44,7 @@ Para a tela mostrar "últimos 7 dias" ou "este mês", o app envia o período.
 | `mediaGlicemia` | média simples das glicemias do período, em mg/dL, 2 casas decimais |
 | `maiorValor` / `menorValor` | registro com o maior/menor valor, com data e momento. Empate: vale o mais recente |
 | `glicemiaAoLongoDoDia` | todas as glicemias do período, em ordem cronológica (pronto para gráfico de linha) |
-| `insulinaTotalDiaria` | soma das doses por dia, em ordem cronológica. Dias sem aplicação não aparecem |
+| `insulinaTotalDiaria` | soma das doses (`totalUi`) e quantidade de aplicações (`quantidade`) por dia, em ordem cronológica. Dias sem aplicação não aparecem |
 | `distribuicaoLeituras` | `{ total, muitoBaixa, baixa, noAlvo, alta, muitoAlta }`, cada faixa com `{ quantidade, percentual }`. Faixas do consenso de 2019: <54, 54–69, 70–180, 181–250 e >250 mg/dL. É percentual das **leituras**, não do tempo. Sem leituras, `percentual` é `null` |
 | `mediaPorMomento` | `[{ momento, media, quantidade }]`: média de cada momento do dia (perfil glicêmico), na ordem jejum → após jantar. Só aparecem momentos com leitura |
 

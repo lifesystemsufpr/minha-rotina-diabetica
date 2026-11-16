@@ -21,6 +21,9 @@ export class TotalInsulinaDiarioDto {
 
   @ApiProperty({ example: 24.5, description: 'Soma das doses do dia, em UI' })
   totalUi!: number;
+
+  @ApiProperty({ example: 2, description: 'Quantidade de aplicações no dia' })
+  quantidade!: number;
 }
 
 export class FaixaLeiturasDto {

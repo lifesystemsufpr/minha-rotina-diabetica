@@ -17,6 +17,14 @@ export class GlycemiaSummaryDto {
 
   @ApiProperty({ enum: StatusGlicemia })
   status!: StatusGlicemia;
+
+  @ApiProperty({
+    example: 'Após caminhada',
+    nullable: true,
+    type: String,
+    description: 'Observação registrada pela usuária. null se não houver.',
+  })
+  observacao!: string | null;
 }
 
 export class InsulinSummaryDto {
@@ -28,6 +36,14 @@ export class InsulinSummaryDto {
 
   @ApiProperty({ enum: LocalAplicacao, nullable: true })
   localAplicacao!: LocalAplicacao | null;
+
+  @ApiProperty({
+    example: null,
+    nullable: true,
+    type: String,
+    description: 'Observação registrada pela usuária. null se não houver.',
+  })
+  observacao!: string | null;
 }
 
 export class ReportRecordDto {
