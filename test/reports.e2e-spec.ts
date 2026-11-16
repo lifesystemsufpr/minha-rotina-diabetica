@@ -48,6 +48,7 @@ describe('Relatórios: histórico consolidado (e2e)', () => {
       valor: 190,
       momento: 'APOS_ALMOCO',
       dataHora: '2026-10-07T12:00:00Z',
+      observacao: 'Depois do almoço de domingo',
     });
     // Registro de outra usuária, no mesmo período.
     await post(tokenB, 'glycemias', {
@@ -72,12 +73,22 @@ describe('Relatórios: histórico consolidado (e2e)', () => {
       'GLYCEMIA',
     ]);
     expect(body[0]).toMatchObject({
-      glycemia: { valor: 190, momento: 'APOS_ALMOCO', status: 'ALTA' },
+      glycemia: {
+        valor: 190,
+        momento: 'APOS_ALMOCO',
+        status: 'ALTA',
+        observacao: 'Depois do almoço de domingo',
+      },
       insulin: null,
     });
     expect(body[1]).toMatchObject({
       glycemia: null,
-      insulin: { tipo: 'Basal', doseUi: 12, localAplicacao: 'COXA' },
+      insulin: {
+        tipo: 'Basal',
+        doseUi: 12,
+        localAplicacao: 'COXA',
+        observacao: null,
+      },
     });
     expect(body[2].glycemia?.status).toBe('BAIXA');
     expect(new Date(body[0].dateTime).toISOString()).toBe(
