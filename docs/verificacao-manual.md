@@ -231,10 +231,53 @@ Verificação do app em celular (375 × 812) e tablet (1024 × 768), em 15 e
 
 Checagem automática: `npm run typecheck` e os testes do app.
 
-Os outros problemas encontrados no app (exclusão de conta, cadastro em duas
-etapas, Dashboard e Relatórios sem usar a API, itens do Perfil sem ação, cores
-fora do tema e formatação de números) não foram alterados. A lista completa
-está no relatório para a PO.
+## App (GliCare): correções autorizadas pela PO em 16/11
+
+Cada item é um PR no repositório do app. Os PRs estão empilhados: cada um usa o
+anterior como base. **Ordem de merge:** #9 → #10 → #11 → #12 → #13 → #8 →
+#14 → #15. Nenhum conflita com o #8.
+
+O app não tem CI. Em todos os PRs rodaram `npm run typecheck` e todos os
+`test:*`, e as telas foram conferidas no Expo web em 375 × 812 contra a API e o
+MariaDB locais.
+
+| PR | Mudança | Como conferir |
+| --- | --- | --- |
+| lifesystemsufpr/GliCare#10 | Excluir conta no Perfil, com confirmação. Saem Tema escuro, Notificações e Privacidade, que não faziam nada. Data de nascimento passa para dentro do cartão do Perfil | Perfil → "Excluir minha conta" → confirmar. O app volta ao login, e o login com a mesma conta responde 401. No banco, a conta fica inativa e anonimizada |
+| lifesystemsufpr/GliCare#11 | Formatação pt-BR (vírgula decimal, datas sem segundos), saudação pelo horário, status "Alta" em vez de "ALTA", botão secundário com contraste 6:1, chave azul nos lembretes, atalho de período marcado em Relatórios e indicadores no topo do Dashboard | Home mostra "4,5 UI" e datas sem segundos. Antes do meio-dia, a saudação é "Bom dia"; à tarde, "Boa tarde" |
+| lifesystemsufpr/GliCare#12 | Remove as sobras do modelo do Expo (rota `explore`, componentes de exemplo e script de reset), tira do cadastro o aviso de Termos e Privacidade (os textos não existem) e reescreve o README do app | `/explore` não existe mais. O README explica como rodar em Android, iOS e web |
+| lifesystemsufpr/GliCare#13 | Dashboard e Relatórios leem a API: `GET /dashboard` e `GET /reports/records`. Depende do #49 da API | Dashboard mostra as cinco faixas (abaixo de 54 em vermelho), a média por momento e a insulina por dia. Relatórios mostram as observações |
+| lifesystemsufpr/GliCare#14 | Cadastro em duas etapas, aviso de perfil incompleto e fim do contato de emergência no app. Inclui o #8 | Cadastre uma conta só com nome, e-mail e senha. A Home mostra "Complete seu perfil" e as outras abas pedem o perfil. Depois de completar o perfil, as abas liberam sem novo login |
+| lifesystemsufpr/GliCare#15 | As cores das telas passam para tokens em `src/shared/theme/colors.ts` (181 trocas), sem mudar nenhum valor | Screenshots antes e depois em 12 telas, idênticos pixel a pixel. O tema escuro não foi implementado |
+
+API: #49 acrescenta `observacao` em `/reports/records` e `quantidade` em
+`/dashboard` (`insulinaTotalDiaria`). É só acréscimo, então o app atual
+continua funcionando. Para conferir:
+
+- `GET /api/reports/records`: cada glicemia e cada insulina traz `observacao`
+  (`null` quando não há);
+- `GET /api/dashboard`: cada dia de `insulinaTotalDiaria` traz `quantidade`.
+
+**Ordem de publicação:** a API com #45, #46 e #49 no ar antes do app com #13
+e #14.
+
+**Não testado em aparelho:**
+
+- área segura do topo (#9);
+- cancelamento dos alertas locais depois de excluir a conta (#10);
+- geração e compartilhamento do PDF no Android e no iOS (#13).
+
+**Fora da autorização:**
+
+- remover do banco as colunas do contato de emergência (depende de
+  confirmação, #48);
+- textos de Termos de Uso e Política de Privacidade;
+- lista fechada de tipos de insulina;
+- regras clínicas;
+- recusar datas futuras na API;
+- envio real de e-mail (SMTP);
+- configurações de produção (`CORS_ORIGIN` e proxy);
+- ClickUp.
 
 ## O que não foi alterado
 
