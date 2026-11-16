@@ -13,11 +13,8 @@ function toNumberOrNull(value: number | string | null): number | null {
 }
 
 // Só os campos enviados, para o PATCH alterar apenas eles.
-// contatoEmergencia é descontinuado: aceito por compatibilidade e descartado.
 function toPerfilColumns(dto: UpdateProfileDto): Partial<Perfil> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { contatoEmergencia, ...campos } = dto;
-  return campos;
+  return { ...dto };
 }
 
 @Injectable()

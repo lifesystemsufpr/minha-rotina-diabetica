@@ -75,29 +75,25 @@ funcionalidade deve usar o mesmo decorator.
 
 ## Contato de emergência
 
-- **A remoção das colunas no banco está adiada até confirmação.** As colunas
-  `contato_emergencia_*` de `perfis` continuam no banco, com os dados que já
-  existem, mas a API não lê, não grava e não devolve esses campos. A API funciona
-  igual com ou sem as colunas: o cadastro, o perfil, os registros e a exclusão
-  de conta foram testados assim no MariaDB.
-- A migration que apaga as colunas (`RemoveContatoEmergencia`) saiu da
-  `development` para nenhum `migration:run` rodá-la por engano. Quando a remoção
-  for confirmada, ela volta num PR próprio, recuperada do histórico:
+O contato de emergência saiu do produto (decisão do PM, nov/2026).
 
-  ```bash
-  git show 331bbdc:src/database/migrations/1794614400000-RemoveContatoEmergencia.ts > src/database/migrations/1794614400000-RemoveContatoEmergencia.ts
-  ```
-
-  Os dados apagados por ela **não voltam** com o `migration:revert`, que recria
-  as colunas vazias. Antes de rodá-la em banco com dados reais, siga
-  [`deploy-backup.md`](deploy-backup.md).
-- **Transição:** versões do app que ainda enviam `contatoEmergencia` no
-  cadastro ou no `PATCH /api/profile` continuam funcionando. O campo é aceito e
-  **ignorado** (não é validado, gravado nem devolvido). Quando o app parar de
-  enviar, apague `ContatoEmergenciaDescontinuado`
-  (`src/modules/profile/dto/contato-emergencia-descontinuado.decorator.ts`) e o
-  campo dos DTOs.
-- As respostas **não têm mais** `contatoEmergencia`.
+- **API:** `contatoEmergencia` não existe mais nos DTOs. Enviar o campo no
+  cadastro ou no `PATCH /api/profile` responde 400. As respostas também não
+  trazem o campo. O app atual (GliCare `dev`) não envia mais.
+- **Banco:** a migration `1795339200000-RemoveContatoEmergenciaComCopia` tira
+  as colunas `contato_emergencia_*` de `perfis` **sem perder os dados**.
+  - Antes de apagar as colunas, ela copia os contatos preenchidos para a
+    tabela `perfis_contato_emergencia_backup` (`usuario_id`, `nome`,
+    `relacao`, `telefone`, `copiado_em`).
+  - O `migration:revert` recria as colunas e devolve os contatos.
+  - Bancos onde a migration antiga `RemoveContatoEmergencia` já tinha apagado
+    as colunas só ganham a tabela vazia.
+  - Ensaiada no MariaDB 10.4 nos dois casos: com dados (run, cópia conferida,
+    revert com os contatos de volta, run de novo) e com as colunas já
+    apagadas.
+- **LGPD:** a tabela de cópia não é lida pela API. A exclusão de conta apaga a
+  linha da pessoa junto com o resto. Quando a remoção estiver confirmada em
+  produção, apague a tabela inteira (ver [`deploy-backup.md`](deploy-backup.md)).
 
 ## O que muda no app (GliCare)
 
@@ -123,4 +119,5 @@ funcionalidade deve usar o mesmo decorator.
   ainda bloqueado, liberação depois do PATCH, login com `perfilCompleto`).
 - `src/modules/users/utils/perfil-completo.spec.ts`: a regra de completude.
 - `test/auth-register.e2e-spec.ts` e `test/profile.e2e-spec.ts`:
-  `contatoEmergencia` aceito e ignorado.
+  `contatoEmergencia` recusado com 400.
+- `test/account.e2e-spec.ts`: a exclusão de conta apaga a cópia do contato.

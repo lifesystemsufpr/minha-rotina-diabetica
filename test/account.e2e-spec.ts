@@ -6,6 +6,7 @@ import { DataSource } from 'typeorm';
 import { Glicemia } from '../src/modules/glycemia/entities/glicemia.entity';
 import { MomentoGlicemia } from '../src/modules/glycemia/enums/momento-glicemia.enum';
 import { Perfil } from '../src/modules/users/entities/perfil.entity';
+import { ContatoEmergenciaBackup } from '../src/modules/users/entities/contato-emergencia-backup.entity';
 import { User } from '../src/modules/users/entities/user.entity';
 import { registerAndLogin, SENHA_TESTE } from './utils/auth-helpers';
 import { createTestApp } from './utils/create-test-app';
@@ -32,6 +33,21 @@ describe('Exclusão de conta (e2e)', () => {
       momento: MomentoGlicemia.JEJUM,
       dataHora: new Date('2026-10-01T08:00:00.000Z'),
     });
+    // Contatos copiados pela migration que tirou o contato de emergência.
+    await db.getRepository(ContatoEmergenciaBackup).save([
+      {
+        usuarioId: userId,
+        nome: 'Contato Excluída',
+        relacao: 'Mãe',
+        telefone: '41999990000',
+      },
+      {
+        usuarioId: 'outra-pessoa',
+        nome: 'Contato Outra',
+        relacao: 'Pai',
+        telefone: '41999990001',
+      },
+    ]);
   });
 
   afterAll(async () => {
@@ -68,6 +84,10 @@ describe('Exclusão de conta (e2e)', () => {
         .getCount();
     expect(await qtd(Perfil)).toBe(0);
     expect(await qtd(Glicemia)).toBe(0);
+    // LGPD: a cópia do contato de emergência também é apagada.
+    const backup = db.getRepository(ContatoEmergenciaBackup);
+    expect(await backup.countBy({ usuarioId: userId })).toBe(0);
+    expect(await backup.countBy({ usuarioId: 'outra-pessoa' })).toBe(1);
 
     const user = await db.getRepository(User).findOneByOrFail({ id: userId });
     expect(user.ativo).toBe(false);
@@ -86,4 +106,12 @@ describe('Exclusão de conta (e2e)', () => {
       .get('/api/users/me')
       .set('Authorization', `Bearer ${tokenOutro}`)
       .expect(200));
+
+  it('continua funcionando depois de apagada a tabela de cópia do contato', async () => {
+    await db.query('DROP TABLE perfis_contato_emergencia_backup');
+    await request(app.getHttpServer())
+      .delete('/api/users/me')
+      .set('Authorization', `Bearer ${tokenOutro}`)
+      .expect(204);
+  });
 });

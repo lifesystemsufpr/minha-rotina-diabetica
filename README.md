@@ -181,7 +181,6 @@ Cria o usuário e um perfil (vazio, ou com os dados de saúde enviados) na mesma
 | `tipoDiabetes` | string | não | `TIPO_1`, `TIPO_2` ou `OUTRO` |
 | `alturaCm` | number | não | De 30 a 272, até 2 casas decimais. Aceita número ou texto numérico (`"170.5"`) |
 | `pesoKg` | number | não | De 1 a 500, até 2 casas decimais. Aceita número ou texto numérico (`"68.3"`) |
-| `contatoEmergencia` | — | não | **Descontinuado.** Aceito só para versões antigas do app e ignorado (não é validado, gravado nem devolvido) |
 
 Os quatro dados de saúde são opcionais aqui e seguem as mesmas regras do `PATCH /api/profile`. Se vierem os quatro, a conta já nasce com o perfil completo.
 

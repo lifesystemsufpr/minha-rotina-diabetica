@@ -15,6 +15,7 @@ import { toUserResponse, UserResponseDto } from './dto/user-response.dto';
 import { isPerfilCompleto } from './utils/perfil-completo';
 import { User } from './entities/user.entity';
 import { Perfil } from './entities/perfil.entity';
+import { ContatoEmergenciaBackup } from './entities/contato-emergencia-backup.entity';
 import { Glicemia } from '../glycemia/entities/glicemia.entity';
 import { Insulina } from '../insulin/entities/insulina.entity';
 import { Lembrete } from '../reminders/entities/lembrete.entity';
@@ -207,6 +208,13 @@ export class UsersService {
           .from(entity)
           .where('usuario_id = :id', { id: user.id })
           .execute();
+      }
+
+      // Cópia do contato de emergência guardada pela migration. A tabela pode
+      // ter sido apagada depois de confirmada a remoção (docs/deploy-backup.md).
+      const backup = manager.getRepository(ContatoEmergenciaBackup).metadata;
+      if (await manager.queryRunner?.hasTable(backup.tableName)) {
+        await manager.delete(ContatoEmergenciaBackup, { usuarioId: user.id });
       }
 
       await manager.update(

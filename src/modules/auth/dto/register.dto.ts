@@ -15,7 +15,6 @@ import {
   trim,
   trimLowercase,
 } from '../../../common/transformers/string.transformers';
-import { ContatoEmergenciaDescontinuado } from '../../profile/dto/contato-emergencia-descontinuado.decorator';
 import { ProfileFieldsDto } from '../../profile/dto/profile-fields.dto';
 import { PASSWORD_PATTERN, PASSWORD_PATTERN_MESSAGE } from '../password-policy';
 // Cadastro em duas etapas (nov/2026):
@@ -58,7 +57,4 @@ export class RegisterDto extends PartialType(ProfileFieldsDto) {
     message: 'confirmarSenha deve ser igual a senha',
   })
   confirmarSenha?: string;
-
-  @ContatoEmergenciaDescontinuado()
-  contatoEmergencia?: unknown;
 }
