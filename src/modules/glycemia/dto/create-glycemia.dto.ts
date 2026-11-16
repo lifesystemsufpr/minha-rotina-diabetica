@@ -1,3 +1,4 @@
+import { IsNotFutureDateTime } from '../../../common/decorators/is-not-future-date-time.decorator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
@@ -27,9 +28,10 @@ export class CreateGlycemiaDto {
   @ApiProperty({
     example: '2026-10-12T08:30:00-03:00',
     description:
-      'Data e hora da medição em ISO 8601 (o app junta os campos data e hora)',
+      'Data e hora da medição em ISO 8601 (o app junta os campos data e hora). Não pode estar no futuro (tolerância de 5 minutos)',
   })
   @IsDateString({ strict: true })
+  @IsNotFutureDateTime()
   dataHora!: string;
 
   @ApiPropertyOptional({ example: 'Depois de caminhar', maxLength: 255 })

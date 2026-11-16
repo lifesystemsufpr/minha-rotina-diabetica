@@ -1,3 +1,4 @@
+import { IsNotFutureDateTime } from '../../../common/decorators/is-not-future-date-time.decorator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
@@ -40,6 +41,7 @@ export class CreateInsulinDto {
     description: 'Data e hora da aplicação em ISO 8601',
   })
   @IsDateString({ strict: true })
+  @IsNotFutureDateTime()
   dataHora!: string;
 
   @ApiPropertyOptional({ example: 'Antes do almoço', maxLength: 255 })

@@ -41,6 +41,10 @@ clínicos enquanto a lista não for fechada pela equipe.
 - `dataHora` é ISO 8601 com fuso (ex.: `2026-10-12T08:30:00-03:00`). O app
   junta os campos de data e hora da tela antes de enviar. A resposta volta
   em UTC (`2026-10-12T11:30:00.000Z`).
+- `dataHora` não pode estar no futuro: medição e aplicação registram o que já
+  aconteceu. Há tolerância de 5 minutos para diferença de relógio entre o
+  aparelho e o servidor. Mais que isso responde 400 em `dataHora`, no
+  cadastro e na edição. Lembretes não seguem esta regra.
 - Filtros `startDate` e `endDate` usam `AAAA-MM-DD` e são **inclusivos**:
   `endDate=2026-10-13` inclui todo o dia 13. `endDate` antes de `startDate`
   responde 400. Regras completas e fuso horário em

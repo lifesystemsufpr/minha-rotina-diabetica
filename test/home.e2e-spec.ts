@@ -186,13 +186,13 @@ describe('Home (e2e)', () => {
     await post(token, 'glycemias', {
       valor: 333,
       momento: 'JEJUM',
-      dataHora: minutos(5),
+      dataHora: minutos(3),
     });
     await post(token, 'insulin-applications', {
       tipo: 'Basal',
       doseUi: 10,
       localAplicacao: 'COXA',
-      dataHora: minutos(5),
+      dataHora: minutos(3),
     });
 
     const body = (await summary(token).expect(200))
