@@ -213,8 +213,28 @@ Como conferir:
 Esses passos foram feitos em 14/11 no Expo web, contra a API e o MariaDB
 locais.
 
-O PR no repositório do app ainda não foi aberto: depende do ok da equipe do
-app.
+PR no repositório do app: lifesystemsufpr/GliCare#8.
+
+## App (GliCare): correções de layout
+
+Verificação do app em celular (375 × 812) e tablet (1024 × 768), em 15 e
+16/11. PR: lifesystemsufpr/GliCare#9.
+
+| Mudança | Como conferir |
+| --- | --- |
+| Rótulos das abas em 10 px (eram 9 px e saíam cortados) | Os seis nomes aparecem inteiros na barra de abas |
+| Nome longo na Home é cortado com reticências | Com um nome de mais de 30 letras, o sino continua visível e abre os Lembretes |
+| Conteúdo com largura máxima de 560 px (`contentWidth` em `src/shared/theme/spacing.ts`) | Em tablet ou na web, campos, botões e cartões ficam centralizados e não ocupam a tela toda. Vale também para login e cadastro |
+| Abas respeitam a área segura do topo (`sceneStyle` em `src/app/(main)/_layout.tsx`) | Num celular com recorte na tela, o título de cada aba fica abaixo da barra de status. **Ainda não conferido em aparelho**: no navegador não dá para ver |
+| Lembretes: "Adicionar lembrete" antes de "Atualizar lista", com espaço entre os botões | Tela de Lembretes, no fim da lista |
+| Perfil: nome centralizado no cartão | Aba Perfil |
+
+Checagem automática: `npm run typecheck` e os testes do app.
+
+Os outros problemas encontrados no app (exclusão de conta, cadastro em duas
+etapas, Dashboard e Relatórios sem usar a API, itens do Perfil sem ação, cores
+fora do tema e formatação de números) não foram alterados. A lista completa
+está no relatório para a PO.
 
 ## O que não foi alterado
 
