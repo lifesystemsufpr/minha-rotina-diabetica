@@ -126,8 +126,8 @@ describe('totalizarInsulinaPorDia', () => {
       insulina(6, new Date(2026, 9, 12, 7, 0)),
     ];
     expect(totalizarInsulinaPorDia(lista)).toEqual([
-      { data: '2026-10-12', totalUi: 10 },
-      { data: '2026-10-13', totalUi: 10 },
+      { data: '2026-10-12', totalUi: 10, quantidade: 2 },
+      { data: '2026-10-13', totalUi: 10, quantidade: 1 },
     ]);
   });
 

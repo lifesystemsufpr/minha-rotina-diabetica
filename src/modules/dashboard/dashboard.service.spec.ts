@@ -46,7 +46,7 @@ describe('DashboardService', () => {
     expect(result.menorValor?.valor).toBe(100);
     expect(result.glicemiaAoLongoDoDia).toHaveLength(2);
     expect(result.insulinaTotalDiaria).toEqual([
-      { data: '2026-10-12', totalUi: 10 },
+      { data: '2026-10-12', totalUi: 10, quantidade: 1 },
     ]);
   });
 

@@ -39,7 +39,12 @@ export class ReportsService {
         type: RecordType.GLYCEMIA,
         id: g.id,
         dateTime: g.dataHora,
-        glycemia: { valor: g.valor, momento: g.momento, status: g.status },
+        glycemia: {
+          valor: g.valor,
+          momento: g.momento,
+          status: g.status,
+          observacao: g.observacao,
+        },
         insulin: null,
       })),
       ...insulinas.map((i): ReportRecordDto => ({
@@ -51,6 +56,7 @@ export class ReportsService {
           tipo: i.tipo,
           doseUi: i.doseUi,
           localAplicacao: i.localAplicacao,
+          observacao: i.observacao,
         },
       })),
     ];

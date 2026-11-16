@@ -57,11 +57,11 @@ export class UsersController {
   @ApiOperation({
     summary: 'Excluir a própria conta',
     description:
-      'Desativa a conta do usuário autenticado (LGPD). Liberada mesmo com o perfil incompleto. Depois disso, o token deixa de valer (401).',
+      'Exclui a conta do usuário autenticado (LGPD). Liberada mesmo com o perfil incompleto. Depois disso, o token deixa de valer (401). Detalhes em docs/account-deletion.md.',
   })
   @ApiNoContentResponse({
     description:
-      'Conta marcada como inativa (soft delete). Dados de glicemia, insulina, lembretes e perfil permanecem no banco, associados ao usuário inativo.',
+      'Conta excluída: perfil, glicemias, aplicações de insulina, lembretes e tokens de recuperação são apagados, e a linha do usuário é anonimizada e desativada, na mesma transação.',
   })
   @ApiNotFoundResponse({ description: 'Usuário não encontrado' })
   @ApiConflictResponse({ description: 'Conta já está inativa' })

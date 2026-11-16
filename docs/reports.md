@@ -31,7 +31,7 @@ Sem registros: `[]`.
     "type": "GLYCEMIA",
     "id": "3f2b8c1e-7a4d-4e9b-9d57-0a1b2c3d4e5f",
     "dateTime": "2026-10-12T11:30:00.000Z",
-    "glycemia": { "valor": 110, "momento": "JEJUM", "status": "NORMAL" },
+    "glycemia": { "valor": 110, "momento": "JEJUM", "status": "NORMAL", "observacao": "Após caminhada" },
     "insulin": null
   },
   {
@@ -39,7 +39,7 @@ Sem registros: `[]`.
     "id": "9c1d2e3f-4a5b-4c6d-8e7f-0a1b2c3d4e5f",
     "dateTime": "2026-10-12T11:00:00.000Z",
     "glycemia": null,
-    "insulin": { "tipo": "Rápida", "doseUi": 10, "localAplicacao": "ABDOMEN" }
+    "insulin": { "tipo": "Rápida", "doseUi": 10, "localAplicacao": "ABDOMEN", "observacao": null }
   }
 ]
 ```
@@ -49,8 +49,8 @@ Sem registros: `[]`.
 | `type` | `GLYCEMIA` ou `INSULIN` |
 | `id` | id do registro original (use nas rotas de glicemia ou insulina para abrir, editar ou excluir) |
 | `dateTime` | data e hora em ISO 8601 (UTC) |
-| `glycemia` | preenchido só quando `type` = `GLYCEMIA`; senão `null` |
-| `insulin` | preenchido só quando `type` = `INSULIN`; senão `null` |
+| `glycemia` | preenchido só quando `type` = `GLYCEMIA`; senão `null`. Inclui `observacao` (`null` se não houver) |
+| `insulin` | preenchido só quando `type` = `INSULIN`; senão `null`. Inclui `observacao` (`null` se não houver) |
 
 Os nomes `type`, `id` e `dateTime` vêm do contrato da task
 "[BACK][REPORTS] Criar endpoint de histórico consolidado".

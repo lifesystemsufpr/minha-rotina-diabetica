@@ -77,14 +77,22 @@ export function montarSerieGlicemia(
 export function totalizarInsulinaPorDia(
   insulinas: InsulinResponseDto[],
 ): TotalInsulinaDiarioDto[] {
-  const totais = new Map<string, number>();
+  const totais = new Map<string, { total: number; quantidade: number }>();
   for (const insulina of insulinas) {
     const dia = diaDe(insulina.dataHora);
-    totais.set(dia, (totais.get(dia) ?? 0) + insulina.doseUi);
+    const atual = totais.get(dia) ?? { total: 0, quantidade: 0 };
+    totais.set(dia, {
+      total: atual.total + insulina.doseUi,
+      quantidade: atual.quantidade + 1,
+    });
   }
   return [...totais.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([data, total]) => ({ data, totalUi: arredondar(total) }));
+    .map(([data, { total, quantidade }]) => ({
+      data,
+      totalUi: arredondar(total),
+      quantidade,
+    }));
 }
 
 // Limites do Consenso Internacional de Tempo no Alvo (Battelino et al.,

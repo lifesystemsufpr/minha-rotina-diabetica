@@ -83,8 +83,8 @@ describe('Dashboard (e2e)', () => {
       100, 200, 60,
     ]);
     expect(body.insulinaTotalDiaria).toEqual([
-      { data: '2026-10-05', totalUi: 14.5 },
-      { data: '2026-10-07', totalUi: 8 },
+      { data: '2026-10-05', totalUi: 14.5, quantidade: 2 },
+      { data: '2026-10-07', totalUi: 8, quantidade: 1 },
     ]);
     expect(body.distribuicaoLeituras).toEqual({
       total: 3,
@@ -112,7 +112,7 @@ describe('Dashboard (e2e)', () => {
     expect(body.mediaGlicemia).toBe(130);
     expect(body.maiorValor?.valor).toBe(200);
     expect(body.insulinaTotalDiaria).toEqual([
-      { data: '2026-10-07', totalUi: 8 },
+      { data: '2026-10-07', totalUi: 8, quantidade: 1 },
     ]);
   });
 

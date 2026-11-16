@@ -12,6 +12,7 @@ const glicemia = (i: number): ReportRecordDto => ({
     valor: 100 + (i % 90),
     momento: MomentoGlicemia.JEJUM,
     status: StatusGlicemia.NORMAL,
+    observacao: null,
   },
   insulin: null,
 });
@@ -21,7 +22,12 @@ const insulina = (i: number): ReportRecordDto => ({
   id: `i${i}`,
   dateTime: new Date(2026, 9, 12, 9, i % 60),
   glycemia: null,
-  insulin: { tipo: 'Rápida', doseUi: 10, localAplicacao: LocalAplicacao.COXA },
+  insulin: {
+    tipo: 'Rápida',
+    doseUi: 10,
+    localAplicacao: LocalAplicacao.COXA,
+    observacao: null,
+  },
 });
 
 // Um PDF válido começa com %PDF- e termina com %%EOF.
