@@ -201,8 +201,6 @@ export class UsersService {
         Insulina,
         Lembrete,
         PasswordResetToken,
-        // Cópia do contato de emergência guardada pela migration.
-        ContatoEmergenciaBackup,
       ]) {
         await manager
           .createQueryBuilder()
@@ -210,6 +208,13 @@ export class UsersService {
           .from(entity)
           .where('usuario_id = :id', { id: user.id })
           .execute();
+      }
+
+      // Cópia do contato de emergência guardada pela migration. A tabela pode
+      // ter sido apagada depois de confirmada a remoção (docs/deploy-backup.md).
+      const backup = manager.getRepository(ContatoEmergenciaBackup).metadata;
+      if (await manager.queryRunner?.hasTable(backup.tableName)) {
+        await manager.delete(ContatoEmergenciaBackup, { usuarioId: user.id });
       }
 
       await manager.update(

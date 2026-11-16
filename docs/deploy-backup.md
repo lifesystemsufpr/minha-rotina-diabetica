@@ -116,7 +116,14 @@ mysql -h HOST -P PORTA -u USUARIO -p -e "DROP TABLE BANCO.perfis_contato_emergen
 ```
 
 Até lá, a exclusão de conta apaga a linha de quem excluir a conta. Depois de
-apagar a tabela, o `migration:revert` dessa migration recria as colunas vazias.
+apagar a tabela, a exclusão de conta continua funcionando (ela confere se a
+tabela existe) e o `migration:revert` dessa migration recria as colunas vazias.
+
+Se a `RemoveContatoEmergenciaComCopia` parar no meio (queda de conexão, por
+exemplo), basta rodar `npm run migration:run` de novo. Ela não copia de novo
+quem já está na tabela de cópia e apaga só as colunas que sobraram. Isso foi
+ensaiado no MariaDB com a cópia feita e nenhuma coluna apagada, e com a cópia
+feita e uma coluna já apagada.
 
 ## Como o ensaio foi feito
 

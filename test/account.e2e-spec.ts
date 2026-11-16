@@ -106,4 +106,12 @@ describe('Exclusão de conta (e2e)', () => {
       .get('/api/users/me')
       .set('Authorization', `Bearer ${tokenOutro}`)
       .expect(200));
+
+  it('continua funcionando depois de apagada a tabela de cópia do contato', async () => {
+    await db.query('DROP TABLE perfis_contato_emergencia_backup');
+    await request(app.getHttpServer())
+      .delete('/api/users/me')
+      .set('Authorization', `Bearer ${tokenOutro}`)
+      .expect(204);
+  });
 });

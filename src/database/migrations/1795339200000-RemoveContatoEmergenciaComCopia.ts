@@ -43,36 +43,48 @@ export class RemoveContatoEmergenciaComCopia1795339200000 implements MigrationIn
       );
     }
 
-    if (!(await queryRunner.hasColumn('perfis', COLUNAS[0].coluna))) return;
+    const existentes: string[] = [];
+    for (const c of COLUNAS) {
+      if (await queryRunner.hasColumn('perfis', c.coluna)) {
+        existentes.push(c.coluna);
+      }
+    }
 
-    await queryRunner.query(
-      `INSERT INTO ${BACKUP} (usuario_id, nome, relacao, telefone)
-       SELECT usuario_id, contato_emergencia_nome, contato_emergencia_relacao, contato_emergencia_telefone
-       FROM perfis
-       WHERE contato_emergencia_nome IS NOT NULL
-          OR contato_emergencia_relacao IS NOT NULL
-          OR contato_emergencia_telefone IS NOT NULL`,
-    );
-    await queryRunner.dropColumns(
-      'perfis',
-      COLUNAS.map((c) => c.coluna),
-    );
+    // A cópia vem antes de apagar qualquer coluna. Se faltar alguma, a cópia
+    // já foi feita numa execução anterior que parou no meio.
+    if (existentes.length === COLUNAS.length) {
+      // NOT EXISTS: numa nova tentativa, mantém o que já foi copiado.
+      await queryRunner.query(
+        `INSERT INTO ${BACKUP} (usuario_id, nome, relacao, telefone)
+         SELECT p.usuario_id, p.contato_emergencia_nome, p.contato_emergencia_relacao, p.contato_emergencia_telefone
+         FROM perfis p
+         WHERE (p.contato_emergencia_nome IS NOT NULL
+             OR p.contato_emergencia_relacao IS NOT NULL
+             OR p.contato_emergencia_telefone IS NOT NULL)
+           AND NOT EXISTS (SELECT 1 FROM ${BACKUP} b WHERE b.usuario_id = p.usuario_id)`,
+      );
+    }
+
+    // Uma coluna por vez: no MySQL cada DROP é confirmado na hora, então uma
+    // nova tentativa apaga só as que sobraram.
+    for (const coluna of existentes) {
+      await queryRunner.dropColumn('perfis', coluna);
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    if (!(await queryRunner.hasColumn('perfis', COLUNAS[0].coluna))) {
-      await queryRunner.addColumns(
-        'perfis',
-        COLUNAS.map(
-          (c) =>
-            new TableColumn({
-              name: c.coluna,
-              type: 'varchar',
-              length: c.length,
-              isNullable: true,
-            }),
-        ),
-      );
+    for (const c of COLUNAS) {
+      if (!(await queryRunner.hasColumn('perfis', c.coluna))) {
+        await queryRunner.addColumn(
+          'perfis',
+          new TableColumn({
+            name: c.coluna,
+            type: 'varchar',
+            length: c.length,
+            isNullable: true,
+          }),
+        );
+      }
     }
     if (await queryRunner.hasTable(BACKUP)) {
       for (const c of COLUNAS) {
