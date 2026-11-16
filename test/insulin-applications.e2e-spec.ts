@@ -73,6 +73,11 @@ describe('Aplicações de insulina (e2e)', () => {
       ['local fora da lista', { localAplicacao: 'outro' }, 'localAplicacao'],
       ['tipo vazio', { tipo: '' }, 'tipo'],
       ['data inválida', { dataHora: '12-10-2026T08:30:00.000Z' }, 'dataHora'],
+      [
+        'data e hora no futuro',
+        { dataHora: new Date(Date.now() + 60 * 60_000).toISOString() },
+        'dataHora',
+      ],
       ['dono enviado pelo mobile', { usuarioId: 'outro' }, 'usuarioId'],
     ])('%s retorna 400', async (_nome, extra, campo) => {
       const res = await api(tokenA)

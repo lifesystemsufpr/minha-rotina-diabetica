@@ -39,8 +39,10 @@ várias chamadas. Todas as consultas usam o usuário do token; parâmetros na UR
 | `resumoDiario` | se houve ao menos uma glicemia e uma insulina **hoje**. Só esses dois itens (a task exclui alimentação e exercício) |
 | `glicemiaUltimos7Dias` | glicemias de hoje e dos 6 dias anteriores, em ordem cronológica, com `dataHora` e `valor` |
 
-Registros com `dataHora` no futuro (a API aceita) só entram em `ultimaGlicemia`,
-`ultimaInsulina`, `resumoDiario` e `glicemiaUltimos7Dias` quando a hora chega.
+A API recusa glicemia e insulina com `dataHora` no futuro, com tolerância de 5
+minutos para diferença de relógio. Um registro dentro dessa tolerância só entra
+em `ultimaGlicemia`, `ultimaInsulina`, `resumoDiario` e `glicemiaUltimos7Dias`
+quando a hora chega.
 
 "Hoje" e "últimos 7 dias" seguem o fuso do processo da API, como o filtro por
 período ([`date-range.md`](date-range.md#fuso-horário)).

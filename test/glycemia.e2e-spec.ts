@@ -69,12 +69,25 @@ describe('Glicemias (e2e)', () => {
 
     it('sem token retorna 401', () => api().post(medicao).expect(401));
 
+    it('aceita até 5 minutos no futuro (diferença de relógio)', () =>
+      api(tokenA)
+        .post({
+          ...medicao,
+          dataHora: new Date(Date.now() + 2 * 60_000).toISOString(),
+        })
+        .expect(201));
+
     it.each([
       ['valor negativo', { valor: -1 }, 'valor'],
       ['valor acima do limite', { valor: 1000 }, 'valor'],
       ['momento fora da lista', { momento: 'ao_dormir' }, 'momento'],
       ['data em outro formato', { dataHora: '14-04-2026' }, 'dataHora'],
       ['data inexistente', { dataHora: '2026-02-30T08:00:00Z' }, 'dataHora'],
+      [
+        'data e hora no futuro',
+        { dataHora: new Date(Date.now() + 60 * 60_000).toISOString() },
+        'dataHora',
+      ],
       ['status enviado pelo mobile', { status: 'NORMAL' }, 'status'],
       ['dono enviado pelo mobile', { usuarioId: 'outro' }, 'usuarioId'],
     ])('%s retorna 400', async (_nome, extra, campo) => {
