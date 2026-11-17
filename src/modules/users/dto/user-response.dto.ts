@@ -29,6 +29,14 @@ export class UserResponseDto {
   @ApiProperty({ example: 'maria@example.com' })
   email!: string;
 
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description:
+      'Versão dos termos aceita pela conta, ou null se ainda não aceitou',
+  })
+  termosVersaoAceita!: string | null;
+
   @ApiProperty({ example: '2026-10-03T12:00:00.000Z' })
   createdAt!: Date;
 
@@ -63,6 +71,7 @@ export function toUserResponse(user: User): UserResponseDto {
     id: user.id,
     nome: user.nome,
     email: user.email,
+    termosVersaoAceita: user.termosVersao ?? null,
     createdAt: user.createdAt,
     perfilCompleto: isPerfilCompleto(user.perfil),
     ...(user.perfil ? { perfil: toPerfilResponse(user.perfil) } : {}),

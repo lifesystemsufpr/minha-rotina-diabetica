@@ -43,6 +43,7 @@ describe('POST /auth/login (e2e)', () => {
       'id',
       'nome',
       'perfilCompleto',
+      'termosVersaoAceita',
     ]);
     expect(JSON.stringify(body)).not.toContain('$2b$');
     expect(JSON.stringify(body)).not.toContain('senha');

@@ -53,6 +53,7 @@ export class AuthService {
         id: user.id,
         nome: user.nome,
         email: user.email,
+        termosVersaoAceita: user.termosVersao ?? null,
         perfilCompleto: await this.users.isPerfilCompleto(user.id),
       },
     };

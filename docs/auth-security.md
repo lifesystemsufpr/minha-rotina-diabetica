@@ -52,3 +52,9 @@ Evitar rollback isolado da coluna de versão: reinstalar código antigo volta a 
 - As suítes funcionais antigas usam cotas altas somente no ambiente de testes; a suíte de proteção injeta cotas pequenas e exercita o mesmo guard e banco. O SMTP permanece simulado.
 
 Comandos: `npm.cmd run build`, `npm.cmd test -- --runInBand`, `npm.cmd run test:e2e -- --runInBand`.
+
+## Aceite dos termos
+
+Cadastro, login (em `user`) e `GET /api/users/me` retornam `termosVersaoAceita`: a versão aceita ou `null`. No cadastro, `versaoTermos` é opcional e, quando informado, deve ser a versão vigente.
+
+Uma conta autenticada, mesmo com perfil incompleto, pode enviar `POST /api/users/me/termos` com `{ "versaoTermos": "2026-11-16" }` (versão vigente em `terms-policy.ts`). A resposta 200 tem o mesmo formato de `GET /api/users/me`. Versão ausente ou diferente recebe 400; token inválido ou de conta excluída recebe 401. O primeiro aceite de cada versão grava a data e uma repetição não a altera. A API não bloqueia rotas por falta de aceite; o aplicativo decide quando solicitá-lo.

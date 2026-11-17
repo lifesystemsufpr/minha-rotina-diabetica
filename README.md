@@ -179,6 +179,7 @@ Cria o usuário e um perfil (vazio, ou com os dados de saúde enviados) na mesma
 | `email` | string | sim | E-mail válido, até 100 caracteres. Salvo em minúsculas e sem espaços nas pontas |
 | `senha` | string | sim | De 8 a 72 caracteres, com letras e números (regra do protótipo). Armazenada somente como hash (bcrypt) |
 | `confirmarSenha` | string | não | Se enviada, deve ser igual a `senha`. Nunca é persistida nem devolvida |
+| `versaoTermos` | string | não | Se enviada, deve ser a versão vigente dos termos (`2026-11-16`) |
 | `dataNascimento` | string | não | Formato `AAAA-MM-DD`, data real (rejeita `2020-02-30`), não futura e a partir de `1900-01-01` |
 | `tipoDiabetes` | string | não | `TIPO_1`, `TIPO_2` ou `OUTRO` |
 | `alturaCm` | number | não | De 30 a 272, até 2 casas decimais. Aceita número ou texto numérico (`"170.5"`) |
@@ -194,6 +195,7 @@ Os quatro dados de saúde são opcionais aqui e seguem as mesmas regras do `PATC
   "nome": "Maria Silva",
   "email": "maria@example.com",
   "createdAt": "2026-10-09T15:00:00.000Z",
+  "termosVersaoAceita": null,
   "perfilCompleto": false,
   "perfil": {
     "dataNascimento": null,
@@ -234,12 +236,14 @@ A resposta nunca contém senha, `confirmarSenha` nem hash. O cadastro **não** f
     "id": "3f2b8c1e-7a4d-4e9b-9d57-0a1b2c3d4e5f",
     "nome": "Maria Silva",
     "email": "maria@example.com",
+    "termosVersaoAceita": null,
     "perfilCompleto": false
   }
 }
 ```
 
 - `perfilCompleto: false`: leve a pessoa para completar o perfil e libere só a Home até lá.
+- `termosVersaoAceita`: versão aceita ou `null`; o aceite posterior está descrito em [auth-security.md](docs/auth-security.md#aceite-dos-termos). A API não bloqueia rotas por falta de aceite.
 - Envie o token nas rotas privadas: `Authorization: Bearer <accessToken>`.
 - Validade definida por `JWT_EXPIRATION` (padrão do `.env.example`: `1d`). Quando expira, a rota privada responde `401` e o app deve pedir novo login.
 - O payload do token tem somente `sub` (id do usuário), `ver` (versão da sessão), `iat` e `exp`.
