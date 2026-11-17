@@ -44,12 +44,12 @@ ambiente publicado, logo depois do `npm run start:prod`.
    diferentes.
    Esperado: quando uma rede é bloqueada (resposta 429), a outra continua
    conseguindo entrar.
-   Hoje a API não tem configuração de `trust proxy`. Atrás de um proxy, todas
-   as pessoas aparecem com o endereço do proxy e dividem o mesmo limite: uma
-   pessoa errando a senha várias vezes bloqueia o login de todas por alguns
-   minutos. Se isso acontecer, o `trust proxy` precisa ser configurado no
-   código antes de liberar o acesso. Detalhes em
-   [`auth-security.md`](auth-security.md).
+   Atrás de um proxy e sem a variável `TRUST_PROXY`, todas as pessoas chegam
+   com o endereço do proxy e dividem o mesmo limite: uma pessoa errando a
+   senha várias vezes bloqueia o login de todas por alguns minutos.
+   Se as duas redes dividirem o limite, defina `TRUST_PROXY` (por exemplo `1`,
+   quando há um proxy na frente da API), reinicie a API e repita o teste.
+   Detalhes em [`auth-security.md`](auth-security.md).
 
 Se um passo falhar, pare, anote o resultado e veja a seção
 [Se precisar voltar](deploy-backup.md#se-precisar-voltar) do

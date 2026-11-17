@@ -1,10 +1,17 @@
 import { INestApplication } from '@nestjs/common';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { createValidationPipe } from './common/pipes/app-validation.pipe';
+import type { Express } from 'express';
+import { configurarTrustProxy } from './config/trust-proxy';
 
 // Configuração global da API. Usada pelo main.ts e pelos testes e2e, para os
 // testes exercitarem exatamente o mesmo prefixo, validação e formato de erro.
 export function configureApp(app: INestApplication): void {
+  const trustProxy = configurarTrustProxy(process.env.TRUST_PROXY);
+  if (trustProxy !== undefined) {
+    const express = app.getHttpAdapter().getInstance() as Express;
+    express.set('trust proxy', trustProxy);
+  }
   app.setGlobalPrefix('api');
 
   // CORS para o desenvolvimento do mobile (manual da Sprint 1, §12).
