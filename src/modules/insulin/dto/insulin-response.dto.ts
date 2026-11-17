@@ -1,12 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Insulina } from '../entities/insulina.entity';
 import { LocalAplicacao } from '../enums/local-aplicacao.enum';
+import { TipoInsulina } from '../enums/tipo-insulina.enum';
 
 export class InsulinResponseDto {
   @ApiProperty({ example: '3f2b8c1e-7a4d-4e9b-9d57-0a1b2c3d4e5f' })
   id!: string;
 
-  @ApiProperty({ example: 'Rápida' })
+  @ApiProperty({
+    enum: TipoInsulina,
+    example: TipoInsulina.ULTRARRAPIDA,
+    description:
+      'Código do tipo de insulina (registros antigos sem correspondência mantêm o texto original)',
+  })
   tipo!: string;
 
   @ApiProperty({ example: 10 })

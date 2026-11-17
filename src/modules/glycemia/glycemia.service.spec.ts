@@ -50,10 +50,25 @@ describe('GlycemiaService', () => {
     repo.findOne.mockResolvedValue({
       id: 'g1',
       valor: 110,
+      momento: MomentoGlicemia.JEJUM,
       status: StatusGlicemia.NORMAL,
     });
     const atualizada = await service.update('usuario-1', 'g1', { valor: 60 });
     expect(atualizada.status).toBe(StatusGlicemia.BAIXA);
+    expect(atualizada.hipoglicemiaNivel2).toBe(false);
+  });
+
+  it('recalcula o status quando o momento muda', async () => {
+    repo.findOne.mockResolvedValue({
+      id: 'g1',
+      valor: 150,
+      momento: MomentoGlicemia.APOS_ALMOCO,
+      status: StatusGlicemia.NORMAL,
+    });
+    const atualizada = await service.update('usuario-1', 'g1', {
+      momento: MomentoGlicemia.JEJUM,
+    });
+    expect(atualizada.status).toBe(StatusGlicemia.ALTA);
   });
 
   it('PATCH sem campos: 400', async () => {

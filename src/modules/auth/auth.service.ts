@@ -26,6 +26,9 @@ export class AuthService {
       nome: dto.nome,
       email: dto.email,
       senhaHash,
+      ...(dto.versaoTermos !== undefined
+        ? { versaoTermos: dto.versaoTermos }
+        : {}),
       // Dados de saúde são opcionais no cadastro (2ª etapa: PATCH /profile).
       perfil: {
         dataNascimento: dto.dataNascimento,

@@ -24,6 +24,7 @@ const glicemia = (
   valor,
   momento,
   status,
+  hipoglicemiaNivel2: valor < 54,
   dataHora,
   observacao: null,
 });

@@ -33,7 +33,7 @@ export class GlycemiaService {
       this.glicemias.create({
         ...dto,
         dataHora: new Date(dto.dataHora),
-        status: classificarGlicemia(dto.valor),
+        status: classificarGlicemia(dto.valor, dto.momento),
         user: { id: userId },
       }),
     );
@@ -70,11 +70,15 @@ export class GlycemiaService {
       throw new BadRequestException('Informe ao menos um campo para atualizar');
     }
     const glicemia = await this.findOwned(userId, id);
+    const novoValor = dto.valor ?? glicemia.valor;
+    const novoMomento = dto.momento ?? glicemia.momento;
+    const recalcularStatus =
+      dto.valor !== undefined || dto.momento !== undefined;
     Object.assign(glicemia, {
       ...dto,
       ...(dto.dataHora ? { dataHora: new Date(dto.dataHora) } : {}),
-      ...(dto.valor !== undefined
-        ? { status: classificarGlicemia(dto.valor) }
+      ...(recalcularStatus
+        ? { status: classificarGlicemia(novoValor, novoMomento) }
         : {}),
     });
     return toGlycemiaResponse(await this.glicemias.save(glicemia));

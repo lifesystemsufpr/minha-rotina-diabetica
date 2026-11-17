@@ -1,5 +1,7 @@
 # Minha Rotina Diabética - API
 
+[Visão geral do projeto](docs/visao-geral.md)
+
 Backend do projeto Minha Rotina Diabética, construído com NestJS.
 
 Segurança da autenticação: [limites de tentativas, revogação de JWTs e migration obrigatória](docs/auth-security.md). JWTs anteriores à inclusão de versão exigem novo login.

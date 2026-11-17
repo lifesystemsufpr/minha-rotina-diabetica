@@ -18,6 +18,7 @@ import { Perfil } from './entities/perfil.entity';
 import { ContatoEmergenciaBackup } from './entities/contato-emergencia-backup.entity';
 import { Glicemia } from '../glycemia/entities/glicemia.entity';
 import { Insulina } from '../insulin/entities/insulina.entity';
+import { InsulinaTipoBackup } from '../insulin/entities/insulina-tipo-backup.entity';
 import { Lembrete } from '../reminders/entities/lembrete.entity';
 import { PasswordResetToken } from '../auth/entities/password-reset-token.entity';
 import { TipoDiabetes } from './enums/tipo-diabetes.enum';
@@ -38,6 +39,7 @@ export interface CreateUserData {
   nome: string;
   email: string;
   senhaHash: string;
+  versaoTermos?: string;
   perfil: CreatePerfilData;
 }
 
@@ -146,11 +148,18 @@ export class UsersService {
 
     try {
       const saved = await this.dataSource.transaction(async (manager) => {
+        const termosAceitos = data.versaoTermos
+          ? {
+              termosVersao: data.versaoTermos,
+              termosAceitosEm: new Date(),
+            }
+          : {};
         const user = await manager.save(
           manager.create(User, {
             nome: data.nome.trim(),
             email,
             senhaHash: data.senhaHash,
+            ...termosAceitos,
           }),
         );
 
@@ -195,6 +204,21 @@ export class UsersService {
     }
 
     await this.dataSource.transaction(async (manager) => {
+      // Cópia do tipo original das insulinas feita pela migration. Precisa ser
+      // apagada ANTES de apagar `insulinas`, porque filtra pelos ids delas.
+      const insulinaBackup = manager.getRepository(InsulinaTipoBackup).metadata;
+      if (await manager.queryRunner?.hasTable(insulinaBackup.tableName)) {
+        await manager
+          .createQueryBuilder()
+          .delete()
+          .from(InsulinaTipoBackup)
+          .where(
+            'insulina_id IN (SELECT id FROM insulinas WHERE usuario_id = :id)',
+            { id: user.id },
+          )
+          .execute();
+      }
+
       for (const entity of [
         Perfil,
         Glicemia,
@@ -226,6 +250,8 @@ export class UsersService {
           email: `excluido-${user.id}@conta-excluida.invalid`,
           // Não é um hash bcrypt válido: nenhuma senha confere com ele.
           senhaHash: '!',
+          termosVersao: null,
+          termosAceitosEm: null,
         },
       );
     });

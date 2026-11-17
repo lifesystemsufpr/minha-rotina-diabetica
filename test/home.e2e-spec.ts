@@ -53,7 +53,7 @@ describe('Home (e2e)', () => {
     }
     // Insulina da A: a última foi ontem, então hoje não houve aplicação.
     await post(tokenA, 'insulin-applications', {
-      tipo: 'Basal',
+      tipo: 'LONGA',
       doseUi: 20,
       localAplicacao: 'COXA',
       dataHora: diaLocal(3, 12),
@@ -92,7 +92,7 @@ describe('Home (e2e)', () => {
       dataHora: diaLocal(0, 0, 30),
     });
     await post(tokenB, 'insulin-applications', {
-      tipo: 'Mista',
+      tipo: 'PRE_MISTURADA',
       doseUi: 12,
       localAplicacao: 'BRACO',
       dataHora: diaLocal(0, 0, 30),
@@ -128,9 +128,40 @@ describe('Home (e2e)', () => {
       .body as HomeSummaryResponseDto;
 
     expect(body.nome).toBe('Maria');
-    expect(body.ultimaGlicemia).toMatchObject({ valor: 110, status: 'NORMAL' });
-    expect(body.ultimaInsulina).toMatchObject({ tipo: 'Rápida', doseUi: 8 });
+    expect(body.ultimaGlicemia).toMatchObject({
+      valor: 110,
+      status: 'NORMAL',
+      hipoglicemiaNivel2: false,
+    });
+    expect(body.ultimaInsulina).toMatchObject({
+      tipo: 'ULTRARRAPIDA',
+      doseUi: 8,
+    });
   });
+
+  it.each([
+    [53, true],
+    [54, false],
+  ])(
+    'calcula hipoglicemiaNivel2 (%s mg/dL -> %s) na última glicemia da Home',
+    async (valor, esperado) => {
+      const { token } = await registerAndLogin(
+        app,
+        `hipo-${valor}@home.local`,
+        'Clara',
+      );
+      await post(token, 'glycemias', {
+        valor,
+        momento: 'JEJUM',
+        dataHora: diaLocal(0, 0, 30),
+      });
+
+      const body = (await summary(token).expect(200))
+        .body as HomeSummaryResponseDto;
+      expect(body.ultimaGlicemia?.hipoglicemiaNivel2).toBe(esperado);
+      expect(body.ultimaGlicemia?.status).toBe('BAIXA');
+    },
+  );
 
   it('próximo lembrete: só ATIVO e que ainda não passou', async () => {
     const body = (await summary(tokenA).expect(200))
@@ -165,7 +196,7 @@ describe('Home (e2e)', () => {
 
     expect(body.nome).toBe('Joana');
     expect(body.ultimaGlicemia?.valor).toBe(300);
-    expect(body.ultimaInsulina?.tipo).toBe('Mista');
+    expect(body.ultimaInsulina?.tipo).toBe('PRE_MISTURADA');
     expect(body.proximoLembrete?.titulo).toBe('Da Joana');
     expect(body.resumoDiario).toEqual({
       glicemiaRegistrada: true,
@@ -189,7 +220,7 @@ describe('Home (e2e)', () => {
       dataHora: minutos(3),
     });
     await post(token, 'insulin-applications', {
-      tipo: 'Basal',
+      tipo: 'LONGA',
       doseUi: 10,
       localAplicacao: 'COXA',
       dataHora: minutos(3),

@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { Insulina } from './entities/insulina.entity';
 import { InsulinService } from './insulin.service';
 
@@ -20,6 +21,8 @@ describe('InsulinService', () => {
       providers: [
         InsulinService,
         { provide: getRepositoryToken(Insulina), useValue: repo },
+        // Só usado ao excluir ou trocar o tipo (coberto no e2e).
+        { provide: DataSource, useValue: {} },
       ],
     }).compile();
     service = moduleRef.get(InsulinService);

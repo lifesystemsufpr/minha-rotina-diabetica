@@ -59,6 +59,15 @@ describe('AuthService', () => {
         pesoKg: 68.3,
       });
     });
+
+    it('repassa versaoTermos quando informada', async () => {
+      users.create.mockResolvedValue({ id: 'uuid-1' });
+      await service.register({ ...dto, versaoTermos: '2026-11-16' });
+
+      const calls = users.create.mock.calls as unknown[][];
+      const arg = calls[0][0] as Record<string, unknown>;
+      expect(arg.versaoTermos).toBe('2026-11-16');
+    });
   });
 
   describe('login', () => {

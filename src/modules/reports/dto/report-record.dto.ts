@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { MomentoGlicemia } from '../../glycemia/enums/momento-glicemia.enum';
 import { StatusGlicemia } from '../../glycemia/enums/status-glicemia.enum';
 import { LocalAplicacao } from '../../insulin/enums/local-aplicacao.enum';
+import { TipoInsulina } from '../../insulin/enums/tipo-insulina.enum';
 
 export enum RecordType {
   GLYCEMIA = 'GLYCEMIA',
@@ -28,7 +29,12 @@ export class GlycemiaSummaryDto {
 }
 
 export class InsulinSummaryDto {
-  @ApiProperty({ example: 'Rápida' })
+  @ApiProperty({
+    enum: TipoInsulina,
+    example: TipoInsulina.ULTRARRAPIDA,
+    description:
+      'Código do tipo de insulina (registros antigos sem correspondência mantêm o texto original)',
+  })
   tipo!: string;
 
   @ApiProperty({ example: 10, description: 'UI (unidades internacionais)' })

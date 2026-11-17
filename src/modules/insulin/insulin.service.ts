@@ -4,7 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  FindOptionsWhere,
+  Repository,
+} from 'typeorm';
 import { dateRangeWhere } from '../../common/utils/date-range';
 import { CreateInsulinDto } from './dto/create-insulin.dto';
 import {
@@ -14,12 +19,14 @@ import {
 import { ListInsulinDto } from './dto/list-insulin.dto';
 import { UpdateInsulinDto } from './dto/update-insulin.dto';
 import { Insulina } from './entities/insulina.entity';
+import { InsulinaTipoBackup } from './entities/insulina-tipo-backup.entity';
 
 @Injectable()
 export class InsulinService {
   constructor(
     @InjectRepository(Insulina)
     private readonly insulinas: Repository<Insulina>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(
@@ -70,12 +77,27 @@ export class InsulinService {
       ...dto,
       ...(dto.dataHora ? { dataHora: new Date(dto.dataHora) } : {}),
     });
-    return toInsulinResponse(await this.insulinas.save(insulina));
+    if (dto.tipo === undefined) {
+      return toInsulinResponse(await this.insulinas.save(insulina));
+    }
+    // Tipo editado pela pessoa: a cópia do texto antigo deixa de valer, para
+    // que um revert da migration não desfaça a edição.
+    const salva = await this.dataSource.transaction(async (manager) => {
+      await apagarCopiaDoTipo(manager, insulina.id);
+      return manager.save(insulina);
+    });
+    return toInsulinResponse(salva);
   }
 
   // Exclusão física: o projeto não adota soft delete para registros.
+  // Apaga também a cópia do tipo original, se houver: dado de saúde excluído
+  // não fica guardado na tabela de cópia.
   async remove(userId: string, id: string): Promise<void> {
-    await this.insulinas.remove(await this.findOwned(userId, id));
+    const insulina = await this.findOwned(userId, id);
+    await this.dataSource.transaction(async (manager) => {
+      await apagarCopiaDoTipo(manager, insulina.id);
+      await manager.remove(insulina);
+    });
   }
 
   // id + dono: registro de outro usuário é tratado como inexistente (404),
@@ -88,5 +110,17 @@ export class InsulinService {
       throw new NotFoundException('Aplicação não encontrada');
     }
     return insulina;
+  }
+}
+
+// Cópia do tipo original guardada pela migration PadronizaTipoInsulinaComCopia.
+// A tabela pode ter sido apagada depois de confirmada a mudança.
+async function apagarCopiaDoTipo(
+  manager: EntityManager,
+  insulinaId: string,
+): Promise<void> {
+  const tabela = manager.getRepository(InsulinaTipoBackup).metadata.tableName;
+  if (await manager.queryRunner?.hasTable(tabela)) {
+    await manager.delete(InsulinaTipoBackup, { insulinaId });
   }
 }

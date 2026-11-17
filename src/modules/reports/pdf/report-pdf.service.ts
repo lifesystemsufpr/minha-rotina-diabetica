@@ -3,6 +3,7 @@ import PDFDocument from 'pdfkit';
 import { MomentoGlicemia } from '../../glycemia/enums/momento-glicemia.enum';
 import { StatusGlicemia } from '../../glycemia/enums/status-glicemia.enum';
 import { LocalAplicacao } from '../../insulin/enums/local-aplicacao.enum';
+import { formatarTipoInsulina } from '../../insulin/enums/tipo-insulina.enum';
 import {
   GlycemiaSummaryDto,
   InsulinSummaryDto,
@@ -85,7 +86,10 @@ function descreverRegistro(record: ReportRecordDto): {
   }
   const i = record.insulin as InsulinSummaryDto;
   const local = i.localAplicacao ? ` - ${LOCAL[i.localAplicacao]}` : '';
-  return { tipo: 'Insulina', detalhe: `${i.tipo} - ${i.doseUi} UI${local}` };
+  return {
+    tipo: 'Insulina',
+    detalhe: `${formatarTipoInsulina(i.tipo)} - ${i.doseUi} UI${local}`,
+  };
 }
 
 // Serviço dedicado: recebe dados já prontos (não acessa banco) e devolve o

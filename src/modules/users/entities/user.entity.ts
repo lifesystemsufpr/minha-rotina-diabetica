@@ -34,6 +34,17 @@ export class User {
   @Column({ name: 'token_version', type: 'int', default: 0 })
   tokenVersion: number;
 
+  @Column({
+    name: 'termos_versao',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
+  termosVersao: string | null;
+
+  @Column({ name: 'termos_aceitos_em', type: 'datetime', nullable: true })
+  termosAceitosEm: Date | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
