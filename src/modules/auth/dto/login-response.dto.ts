@@ -11,6 +11,14 @@ export class LoginUserDto {
   email!: string;
 
   @ApiProperty({
+    type: String,
+    nullable: true,
+    description:
+      'Versão dos termos aceita pela conta, ou null se ainda não aceitou',
+  })
+  termosVersaoAceita!: string | null;
+
+  @ApiProperty({
     example: false,
     description:
       'false: o app leva para completar o perfil (PATCH /profile) e só libera a Home.',

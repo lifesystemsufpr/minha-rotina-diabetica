@@ -96,6 +96,7 @@ describe('AuthService', () => {
           id: 'uuid-1',
           nome: 'Maria',
           email: 'maria@example.com',
+          termosVersaoAceita: null,
           perfilCompleto: false,
         },
       });

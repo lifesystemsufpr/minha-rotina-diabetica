@@ -133,8 +133,17 @@ describe('UsersService', () => {
           senhaHash: true,
           ativo: true,
           tokenVersion: true,
+          termosVersao: true,
         },
       });
+    });
+  });
+
+  describe('aceitarTermos', () => {
+    it('recusa id vazio sem consultar ou alterar o banco', async () => {
+      await expect(service.aceitarTermos('', '2026-11-16')).rejects.toThrow();
+      expect(repo.findOne).not.toHaveBeenCalled();
+      expect(repo.update).not.toHaveBeenCalled();
     });
   });
 
@@ -246,6 +255,7 @@ describe('UsersService', () => {
         'id',
         'nome',
         'perfilCompleto',
+        'termosVersaoAceita',
       ]);
     });
 

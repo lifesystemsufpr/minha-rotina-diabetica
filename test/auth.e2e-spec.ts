@@ -146,6 +146,7 @@ describe('Auth + rota protegida', () => {
       'nome',
       'perfil',
       'perfilCompleto',
+      'termosVersaoAceita',
     ]);
   });
 

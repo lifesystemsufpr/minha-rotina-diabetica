@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -117,8 +118,28 @@ export class UsersService {
         senhaHash: true,
         ativo: true,
         tokenVersion: true,
+        termosVersao: true,
       },
     });
+  }
+
+  async aceitarTermos(
+    id: string,
+    versaoTermos: string,
+  ): Promise<UserResponseDto> {
+    if (!id) throw new UnauthorizedException();
+    await this.usersRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({ termosVersao: versaoTermos, termosAceitosEm: new Date() })
+      .where('id = :id AND ativo = :ativo', { id, ativo: true })
+      .andWhere('(termos_versao IS NULL OR termos_versao <> :versao)', {
+        versao: versaoTermos,
+      })
+      .execute();
+    const user = await this.findByIdWithPerfil(id);
+    if (!user || !user.ativo) throw new UnauthorizedException();
+    return toUserResponse(user);
   }
 
   // Troca o hash da senha (fluxo de redefinição). Recebe só o hash; aceita o

@@ -1,13 +1,16 @@
 import {
   Controller,
+  Body,
   Delete,
   Get,
   HttpCode,
+  Post,
   UseGuards,
   UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBadRequestResponse,
   ApiConflictResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
@@ -21,6 +24,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UsersService } from './users.service';
 import { toUserResponse, UserResponseDto } from './dto/user-response.dto';
+import { AceitarTermosDto } from './dto/aceitar-termos.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -48,6 +52,34 @@ export class UsersController {
     // Token válido de usuário que não existe mais
     if (!user) throw new UnauthorizedException();
     return toUserResponse(user);
+  }
+
+  @Post('me/termos')
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Aceitar a versão vigente dos termos',
+    description:
+      'Disponível também para contas com perfil incompleto. O primeiro aceite da versão mantém sua data.',
+  })
+  @ApiOkResponse({
+    description: 'Dados atualizados do usuário autenticado',
+    type: UserResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Versão dos termos ausente ou inválida',
+    type: ErrorResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token ausente, inválido, expirado ou de conta excluída',
+    type: ErrorResponseDto,
+  })
+  async aceitarTermos(
+    @CurrentUser('id') userId: string,
+    @Body() dto: AceitarTermosDto,
+  ): Promise<UserResponseDto> {
+    return this.users.aceitarTermos(userId, dto.versaoTermos);
   }
 
   @Delete('me')
