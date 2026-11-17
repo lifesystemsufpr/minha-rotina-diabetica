@@ -123,7 +123,7 @@ colunas de contato voltam **com os dados**, copiados da tabela
 `RemoveContatoEmergencia` (que não está mais no repositório) devolvia as
 colunas vazias.
 
-## Depois de confirmar a remoção do contato
+## Depois de confirmar as mudanças
 
 A tabela `perfis_contato_emergencia_backup` guarda dados pessoais que o produto
 não usa mais. Quando a versão estiver confirmada em produção e não houver mais
@@ -136,6 +136,20 @@ mysql -h HOST -P PORTA -u USUARIO -p -e "DROP TABLE BANCO.perfis_contato_emergen
 Até lá, a exclusão de conta apaga a linha de quem excluir a conta. Depois de
 apagar a tabela, a exclusão de conta continua funcionando (ela confere se a
 tabela existe) e o `migration:revert` dessa migration recria as colunas vazias.
+
+A tabela `insulinas_tipo_backup` guarda o ID da aplicação, o tipo original e a
+hora da cópia. Quando a versão estiver confirmada em produção e não houver mais
+chance de voltar, apague também essa tabela:
+
+```bash
+mysql -h HOST -P PORTA -u USUARIO -p -e "DROP TABLE BANCO.insulinas_tipo_backup;"
+```
+
+Depois disso, o `migration:revert` de `PadronizaTipoInsulinaComCopia` não
+restaura os tipos originais: sem a tabela, ele não altera os tipos. Editar ou
+excluir uma aplicação continua funcionando, pois a API verifica se a tabela
+existe. Enquanto a cópia existir, excluir uma aplicação ou alterar seu tipo
+remove a respectiva linha da cópia.
 
 Se a `RemoveContatoEmergenciaComCopia` parar no meio (queda de conexão, por
 exemplo), basta rodar `npm run migration:run` de novo. Ela não copia de novo
